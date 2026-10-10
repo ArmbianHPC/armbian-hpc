@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "target",
+  "id": "wxy-oect-base",
+  "name": "OECT / SATA ext4 / 基础系统",
+  "status": "source_prepared",
+  "architecture": "arm64",
+  "backend": "armbian-v25-08",
+  "board": "wxy-oect-original",
+  "os": "debian-bookworm-minimal",
+  "storage": "emmc-sata-squashfs-ab",
+  "workload": "base-server",
+  "overrides": {
+    "storage": {
+      "external_interface": "sata",
+      "boot": {
+        "label": "OECT_BOOT"
+      },
+      "rescue": {
+        "label": "OECT_RESCUE"
+      },
+      "root": {
+        "label": "OECT_ROOT"
+      },
+      "data": {
+        "label": "OECT_DATA"
+      }
+    }
+  }
+}

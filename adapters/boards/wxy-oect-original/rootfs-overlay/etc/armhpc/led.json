@@ -1,0 +1,5 @@
+{
+  "channels": {"red": "red:status", "green": "green:status", "blue": "blue:status"},
+  "heartbeat": true,
+  "critical_units": ["armhpc-firstboot.service", "ssh.service", "systemd-networkd.service"]
+}

@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC hardware-stock performance policy
+After=local-fs.target systemd-udev-trigger.service
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/performance.py
+RemainAfterExit=yes
+NoNewPrivileges=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

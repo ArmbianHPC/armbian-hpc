@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC device MAC, Rescue hostname and SSH initialization
+After=local-fs.target systemd-udev-trigger.service
+Before=network-pre.target systemd-networkd.service NetworkManager.service ssh.service ssh.socket
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/firstboot.py
+RemainAfterExit=yes
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC save recoverable time before chrony and shared storage stop
+After=chrony.service armhpc-clock-floor.service var-lib-armhpc-ota.mount
+Wants=armhpc-clock-floor.service
+ConditionPathExists=/etc/armhpc/image-build-time.json
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/usr/bin/python3 /usr/lib/armhpc/clock_floor.py --flush --reason shutdown
+RemainAfterExit=yes
+TimeoutStartSec=5
+TimeoutStopSec=5
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

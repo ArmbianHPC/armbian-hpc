@@ -1,0 +1,9 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+PREREQ=""
+prereqs() { echo "$PREREQ"; }
+case "${1:-}" in prereqs) prereqs; exit 0;; esac
+set -eu
+. /usr/share/initramfs-tools/hook-functions
+copy_exec /usr/sbin/blkid /sbin/blkid
+copy_file config /etc/armhpc/root-selection.conf /conf/armhpc-root.conf

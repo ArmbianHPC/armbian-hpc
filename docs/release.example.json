@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "target": "wxy-oect-k3s",
+  "source_ref": "HEAD",
+  "build_record": "build/images/build-record.json",
+  "hardware_report": "build/images/hardware-report.json",
+  "notices": "build/images/IMAGE-LICENSES.txt",
+  "images": [
+    {
+      "path": "build/images/boot-rescue.img",
+      "publication_path": "build/images/boot-rescue.img.xz",
+      "mounts": {"boot": "/mnt/release/boot", "rescue": "/mnt/release/rescue"}
+    },
+    {
+      "path": "build/images/sata.img",
+      "publication_path": "build/images/sata.img.xz",
+      "mounts": {"normal": "/mnt/release/normal", "data": "/mnt/release/data"}
+    }
+  ],
+  "corresponding_sources": []
+}

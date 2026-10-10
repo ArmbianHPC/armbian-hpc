@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC shared clock recovery for RTC-less hardware
+After=local-fs.target var-lib-armhpc-ota.mount
+Wants=var-lib-armhpc-ota.mount
+Before=armhpc-firstboot.service chrony.service ssh.service ssh.socket armhpc-ota-health.service armhpc-ota-worker.service
+ConditionPathExists=/etc/armhpc/image-build-time.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/clock_floor.py
+RemainAfterExit=yes
+TimeoutStartSec=10
+CapabilityBoundingSet=CAP_SYS_TIME
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

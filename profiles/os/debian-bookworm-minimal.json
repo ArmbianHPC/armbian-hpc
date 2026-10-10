@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kind": "os",
+  "id": "debian-bookworm-minimal",
+  "name": "Debian Bookworm minimal server",
+  "architectures": [
+    "arm64",
+    "armhf"
+  ],
+  "release": "bookworm",
+  "desktop": false,
+  "init": "systemd",
+  "packages": [
+    "openssh-server",
+    "sudo",
+    "python3",
+    "ca-certificates",
+    "util-linux",
+    "e2fsprogs",
+    "zstd",
+    "tar",
+    "acl",
+    "attr",
+    "fdisk",
+    "chrony"
+  ],
+  "access_policy": {
+    "provision_stage": "local_install",
+    "create_administrator": true,
+    "authentication": "ssh_public_key",
+    "root_ssh_login": false,
+    "password_ssh_login": false,
+    "administrator_sudo": "passwordless",
+    "require_provisioning_before_ssh": true
+  },
+  "firmware_policy": {
+    "install_armbian_bundle": false,
+    "selection": "board_allowlist"
+  }
+}

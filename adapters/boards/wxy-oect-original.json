@@ -1,0 +1,951 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "wxy-oect-original",
+  "name": "WXY OEC Turbo（原版 eMMC）",
+  "status": "source_prepared",
+  "soc": "rockchip-rk3566",
+  "architectures": [
+    "arm64"
+  ],
+  "storage_interfaces": [
+    "emmc",
+    "sata",
+    "usb"
+  ],
+  "expected_hardware": {
+    "ram_bytes": 4294967296,
+    "emmc_capacity_class": "8 GB",
+    "verified_on_device": false,
+    "confirmed_by_user": true,
+    "variant": "original-4g-8g"
+  },
+  "boot": {
+    "dtb": "rockchip/rk3566-wxy-oec-turbo-4g.dtb",
+    "dts": "adapters/boards/wxy-oect-original/dts/rk3566-wxy-oec-turbo-4g.dts",
+    "dts_origin": "unifreq/linux-6.12.y@4c0b3046f608fad852b55de1b234d43b8e178034",
+    "raw_layout_status": "requires_device_verification",
+    "normal_root_interface": "sata",
+    "recovery_environment": "emmc_rescue",
+    "cpu_overclock": false,
+    "chain": {
+      "provider": "reviewed-components",
+      "scope": "permanent-board-chain",
+      "build_in_framework": false,
+      "include_in_image": true,
+      "write_by_framework": true,
+      "preserve_existing_regions": true,
+      "temporary_loader_provider": "user",
+      "include_temporary_loader_in_image": false,
+      "include_payloads_in_repository": false
+    },
+    "permanent_components": [],
+    "flash_workflow": {
+      "tool": "Rockchip RKDevTool",
+      "system_image_count": 1,
+      "system_entry": "system",
+      "system_address_hex": "0x00000000",
+      "address_semantics": "raw_emmc_lba_0",
+      "temporary_loader_entry": "LoaderToDDR",
+      "temporary_loader_address_hex": "0xCCCCCCCC",
+      "temporary_loader_address_semantics": "tool_sentinel_not_emmc_offset",
+      "temporary_loader_provider": "user",
+      "delivery": "single_emmc_boot_rescue_img_with_factory_rootfs_archive",
+      "sata_partitioning_stage": "local_install",
+      "reference_layout_status": "inspected_not_adopted_as_final_layout"
+    },
+    "dts_backports": [
+      {
+        "source": "https://github.com/torvalds/linux/commit/53ec6d21fe1ec0677f9db56a23dda8d145eda102",
+        "scope": [
+          "PHY reset GPIO/timing (MDIO bus before ID reads)",
+          "explicit eMMC pinmux"
+        ],
+        "hardware_verified_in_this_project": false,
+        "kernel_compatibility": "Linux 6.12: MDIO bus reset before PHY-ID reads, no duplicate PHY GPIO owner"
+      }
+    ],
+    "compatibility_record": "adapters/boards/wxy-oect-original/boot/compatibility.json",
+    "secure_boot_state": "unknown; signed stock and unsigned candidate verified; unsigned USB loader reportedly restores flashing",
+    "ethernet_phy_address": 0,
+    "ethernet_phy_address_basis": "Working user reference DTB SHA256 958aeffac4e4c7fec87757199f5f3585762316f95978bc234fcd87784859c3ae; GMAC1 phy-handle resolves to phy@0 reg=0",
+    "ethernet_delay_basis": "Working reference DTB: rgmii, tx_delay=0x4f, rx_delay=0x2d; no hardware proof yet",
+    "reference_environment_spec": "adapters/boards/wxy-oect-original/boot/environment.json"
+  },
+  "armbian_board": "wxy-oect",
+  "backend_files": {
+    "armbian-v25-08": [
+      {
+        "source": "adapters/boards/wxy-oect-original/armbian/wxy-oect.csc",
+        "destination": "config/boards/wxy-oect.csc"
+      },
+      {
+        "source": "adapters/boards/wxy-oect-original/dts/rk3566-wxy-oec-turbo-4g.dts",
+        "destination": "kernel/armhpc-oect/rk3566-wxy-oec-turbo-4g.dts"
+      },
+      {
+        "source": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/board-helios64-remove-pcie-ep-gpios.patch",
+        "destination": "kernel/armhpc-oect-overrides/board-helios64-remove-pcie-ep-gpios.patch"
+      },
+      {
+        "source": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/board-pbp-add-dp-alt-mode.patch",
+        "destination": "kernel/armhpc-oect-overrides/board-pbp-add-dp-alt-mode.patch"
+      },
+      {
+        "source": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/general-v4l2-rkvdec-01-vp9.patch",
+        "destination": "kernel/armhpc-oect-overrides/general-v4l2-rkvdec-01-vp9.patch"
+      },
+      {
+        "source": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/rk3588-0801-wireless-add-bcm43752.patch",
+        "destination": "kernel/armhpc-oect-overrides/rk3588-0801-wireless-add-bcm43752.patch"
+      },
+      {
+        "source": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/zz-armhpc-linux-6.12.111-driver-apis.patch",
+        "destination": "kernel/armhpc-oect-overrides/zz-armhpc-linux-6.12.111-driver-apis.patch"
+      },
+      {
+        "source": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/board-oect-usb2-peripheral-power.patch",
+        "destination": "kernel/armhpc-oect-overrides/zz-armhpc-usb2-peripheral-power.patch"
+      }
+    ]
+  },
+  "workload_overlays": {
+    "k3s": "adapters/boards/wxy-oect-original/rootfs-overlay",
+    "none": "adapters/boards/wxy-oect-original/rootfs-overlay"
+  },
+  "inputs": [
+    {
+      "id": "board-dts",
+      "path": "adapters/boards/wxy-oect-original/dts/rk3566-wxy-oec-turbo-4g.dts",
+      "sha256": "ced9a39caeef51e32a390c387c24db510a4e6d2f03499791c5731a3e4a0eb24c",
+      "stage_as": "dts/rk3566-wxy-oec-turbo-4g.dts",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "board-build-definition",
+      "path": "adapters/boards/wxy-oect-original/armbian/wxy-oect.csc",
+      "sha256": "2a98175410cc06557defb5edd42dca4af9750581aff11842cd986df6b3f41a12",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "kernel-fix-board-helios64-remove-pcie-ep-gpios",
+      "path": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/board-helios64-remove-pcie-ep-gpios.patch",
+      "sha256": "0013a496b24ab656118a93b3fb078661c00d13eda03b090cf7ad26c4409f5906",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "kernel-fix-board-pbp-add-dp-alt-mode",
+      "path": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/board-pbp-add-dp-alt-mode.patch",
+      "sha256": "6f0a2c7699f94bb17532bb684f74f1e81f04e95d4a06a0e25006d23761edb158",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "kernel-fix-general-v4l2-rkvdec-01-vp9",
+      "path": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/general-v4l2-rkvdec-01-vp9.patch",
+      "sha256": "1bd5e2d6a6d7d79b763929edc44546903932d08bcf54e2b9d40a3b22e363ffcb",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "kernel-fix-rk3588-0801-wireless-add-bcm43752",
+      "path": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/rk3588-0801-wireless-add-bcm43752.patch",
+      "sha256": "a421b92a1cf0eaa33a9e7a5e62cf6b3e4102dc8280ba81b9deeeca6508686c0e",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "kernel-fix-driver-apis",
+      "path": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/zz-armhpc-linux-6.12.111-driver-apis.patch",
+      "sha256": "cb422506964cd6df4416afcfb820be159797e6789dd580391c42abe2c221972a",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rootfs-artifact-preparer",
+      "path": "tools/build/prepare-rootfs-artifact.sh",
+      "sha256": "032142f86d45256c6b0baf9ec62a0fddb86f8a4fc678bf14112179ef3deb1adf",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "factory-rootfs-builder",
+      "path": "adapters/boards/wxy-oect-original/armbian/make-factory-rootfs.sh",
+      "sha256": "e679e00eb94c33cea8b1844bd1100853f0684a91c5af644b32ff87410a787fc8",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "runtime-root-selection-conf",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/armhpc/root-selection.conf",
+      "sha256": "bf711222e1e774b89fbcb5c84b9dcc06c7e0d81f061b3bafc562abc1b9993acc",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "runtime-armhpc-root-selection",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/initramfs-tools/hooks/armhpc-root-selection",
+      "sha256": "5cb3ae4193ea35c84dabffc526934eaf056586a450edb562437692edc9389b9a",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "runtime-armhpc-root-select",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/initramfs-tools/scripts/local-top/armhpc-root-select",
+      "sha256": "818e5a98891dd214b24efc35fbb74910ef869facbb342cf5a014d56aa8ee83e9",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "network-review-oect-boot-diagnostics",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/usr/lib/armhpc/oect-boot-diagnostics.py",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "ac30333f2f6351cd9c1c77e6081b97d5b59e05a38e69d35aa5316a5e559212b8"
+    },
+    {
+      "id": "network-review-armhpc-oect-boot-diagnostics",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/systemd/system/armhpc-oect-boot-diagnostics.service",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "82f059c7d028ed865d03b7d9453de9c3cae3e1b3544f27a51a1b99cdf671f005"
+    },
+    {
+      "id": "network-review-verify-oect-network",
+      "path": "scripts/verify-oect-network.py",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "3fd1e5f2f8886e8b562b983b57d2f2310b55a6f31b2224e7b1dab8dc61378e15"
+    },
+    {
+      "id": "board-boot-compatibility",
+      "path": "adapters/boards/wxy-oect-original/boot/compatibility.json",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "e5b5d0bd6ea3f50ec681f5c4b979b1e23281bb4eac06e7d09bd0d6696ce375d5"
+    },
+    {
+      "id": "boot-chain-validator",
+      "path": "framework/boot_chain.py",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "7c3b70a29725c837e5e8048f7b04b52fc68ec625efc349e722e1b3ad106363a0"
+    },
+    {
+      "id": "oect-private-startup-dtb-compiler",
+      "path": "tools/build/compile-oect-startup-dtb.sh",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "42859c46b8d6fd62dd05f0919c9a72cafd621ec076a32565eaae8b9d8c7c67e1"
+    },
+    {
+      "id": "image-delivery-packager",
+      "path": "framework/artifacts.py",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "3fd88689fc9eda977bb4e807ad3a04266bb4523a8df86c88b9b00c41cd0baa40"
+    },
+    {
+      "id": "image-delivery-cli",
+      "path": "tools/build/package-image.py",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "32c7d212a41ba03cfc223d87350cd54bc18083540007a4357be818b4abf6f5cc"
+    },
+    {
+      "id": "current-oect-dtb-compiler",
+      "path": "tools/build/compile-oect-dtb.sh",
+      "sha256": "5b964ae33d6d3a7c3c864e061f3ebea77b45659e813eda265e8feb0d1a5a115e",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "persistent-boot-environment-validator",
+      "path": "framework/boot_environment.py",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "bd565758dbaf1bf3d8b0da4b4949391afef45aa565c725d3af704fcfaab0672f"
+    },
+    {
+      "id": "oect-reference-boot-environment-spec",
+      "path": "adapters/boards/wxy-oect-original/boot/environment.json",
+      "acquire": {
+        "type": "repository"
+      },
+      "sha256": "c285d3e921cb175bad51711f431e7751e0b324453a17532022af8084fa3b27f8"
+    },
+    {
+      "id": "rescue-r5-32",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/armhpc/network-identity.json",
+      "sha256": "6cd9ff73e79a061cbac0fe531a900c17fb3c005854f569be8571f8b37ebbaf6b",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-33",
+      "path": "components/common/rootfs-overlay/etc/systemd/network/10-armhpc-ethernet.link",
+      "sha256": "7704cc8fed6694dfb64b8a7f14ac7dc45272984ece2c51111ba830885cfad224",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-34",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-firstboot.service",
+      "sha256": "ea2d924e437ab47c90abaf59f28979481233c38556e701e09283c8c55f4aa765",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-35",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/ssh.service.d/10-image-framework-admin.conf",
+      "sha256": "cce820bfbe3981c0625cfe2a670473be9d44575d1d2393e0c6dcf6ac0da6bb04",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-36",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/ssh.socket.d/10-image-framework-admin.conf",
+      "sha256": "cce820bfbe3981c0625cfe2a670473be9d44575d1d2393e0c6dcf6ac0da6bb04",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-37",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/systemd-networkd.service.d/10-armhpc-firstboot.conf",
+      "sha256": "136caadf58cf1d983a531accc15001fc824a60e8f1c21e85c71448fa5b3bd7f1",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-38",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/firstboot.py",
+      "sha256": "7016b09e520c62929908e76444bbd89939ecb19ac4523f57397d8f30adb23c1b",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-39",
+      "path": "components/common/rootfs-overlay/usr/local/sbin/armhpc",
+      "sha256": "37973cc89999955632a2053fc16deb4cb6570e8ace848060e19a8c5844a9dd4f",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-40",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/configuration.py",
+      "sha256": "a4e96a2e3a74bd65dd827976b63ba47b22f5a7dcb90646eec688d4f654c5f7cd",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-41",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/admin.py",
+      "sha256": "a8d56eb620db90b6fb0270e67a4a047930fc5250a495399b7a5d7f63fc6ce54c",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-42",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/rescue_boot.py",
+      "sha256": "449995bffe7a418c5494328db141ebcd1bec78c7f5b4c0f313c2196e10667abb",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-43",
+      "path": "components/rescue/rootfs-overlay/usr/lib/armhpc/rescue.py",
+      "sha256": "1e2487fa703644ea3dcdd60fa495385a0799ece02865a268cddbd4c44b0fdb85",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-44",
+      "path": "components/rescue/rootfs-overlay/usr/lib/armhpc/rescue_menu.py",
+      "sha256": "fd0305b2cdffa68e271bbdb2df93224f01a588b303c99441b033f8e88253ba62",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-46",
+      "path": "scripts/verify-full-rescue-image.py",
+      "sha256": "cf5855af0e01b513a6f58b6c40acb913b250b51d6035ce12fff035ec3aa00f36",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r5-47",
+      "path": "tests/test_firstboot.py",
+      "sha256": "ee80da6de1649ab3ce8620db7ea9ce2ea0f31a4e8c9f9499f569978efbfb3f4b",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r6-50",
+      "path": "framework/boot_payload.py",
+      "sha256": "ffe2d3eebf48b0abfcdeb92eb26074a25e937b524ad14c3200c6bce1d2f0e9d1",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r6-51",
+      "path": "tests/test_boot_payload.py",
+      "sha256": "37b0f53b0fd3abd3f0c836d3ffb9b26e8b88ab1e4611636fc86b77cd23530042",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-52",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/armhpc/led.json",
+      "sha256": "da788a2d4c4d39711cc9f7955a8ccf5e226a9c75dc43a3b57ff7d31f3c997206",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-53",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/armhpc/phy-led.json",
+      "sha256": "fc5466854be8dcfee499da91e64acd2857d6ac5d860dd64694117e93d8e0abaa",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-54",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/systemd/system/armhpc-oect-phy-leds.service",
+      "sha256": "6f934d5f993f81ee624a737d59a1ea010d28de9a82150c8c1c339de420d2911d",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-55",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/usr/lib/armhpc/phy_leds.py",
+      "sha256": "1c69480496d52496472180f16d363d06e7e9e220dd23fb5a51c44e251ee27c00",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-57",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-led.service",
+      "sha256": "3b9cdef06b1cc25c3063014b8175880bb516f408877e07857297126eb8815d86",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-58",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-performance.service",
+      "sha256": "c1267c9b7c2242bb7061815ae0d9737a392c7c1b8048fc2222fee74de8c8c3db",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-59",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/leds.py",
+      "sha256": "5286326eab425d8f8084e1342c5cc06e2c7a581c071e0574f9c44b52ef43dc96",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-60",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/performance.py",
+      "sha256": "dd1c71204236ae84fdf3c0995bb93e72d0c9d6e50e17575785e32fa716e16b65",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-63",
+      "path": "tests/test_phy_leds.py",
+      "sha256": "0bad9add34ff2c71923e2206aa24c90c9257a5e9d2a2b8d7d9203c8899932c93",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-64",
+      "path": "tests/test_rescue.py",
+      "sha256": "6bfd70bd51d1075743771118c46c1e397d650acf956bbbaf962b6fd717805945",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-65",
+      "path": "tests/test_rgb_performance.py",
+      "sha256": "095ceda9462168b5a1b5f2865907b963d3252e43f9efd406610ca4bf08c99537",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-66",
+      "path": "tests/test_oect_diagnostics.py",
+      "sha256": "5f198ae79ef141512459f9b235f0a8f97c221716c5e0251ab75ef58aae7ba80f",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r7-67",
+      "path": "tests/test_rescue_menu.py",
+      "sha256": "86d363925940c7e5ec84045b843042cec5c3687916db377de5c0ef9b1b0196af",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-68",
+      "path": "components/common/rootfs-overlay/etc/chrony/chrony.conf",
+      "sha256": "dd90009162f6832e714c5fbf1388697f98d829d132fc6994d4d99e3da476d283",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-69",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-clock-checkpoint.service",
+      "sha256": "905a81f64f00545563833504d20aa8c8af6b78f1808a6ea51ea4f10ec08581cb",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-70",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-clock-checkpoint.timer",
+      "sha256": "481b5339cebc43cfd4d0ef0157fe9c35725b467ef73c073949551ed4838779f1",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-71",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-clock-floor.service",
+      "sha256": "94e8debd82bba0b5e8c5a683b14feae85560791a17e359e06f800b864a469e14",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-72",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/clock_floor.py",
+      "sha256": "3201e222683b7b1c0e3192de05c9e46e87d6f86f9eb59010311576d080fd46b3",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-74",
+      "path": "profiles/os/debian-bookworm-minimal.json",
+      "sha256": "8fcd44b4b396b855b4af7cf83e7a96f77602073476b135e11dcf78d8bcc12e0f",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-75",
+      "path": "tests/test_clock_floor.py",
+      "sha256": "056c4aabfa1653439ed9eb53d6137e0067d109260cd2ec19f25613a765378834",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-76",
+      "path": "tools/build/install-clock-package.py",
+      "sha256": "e67f1639277e9990e21b79a1ebff1377ca0231bbaf97f4bb94e4d6de826e9410",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rescue-r8-78",
+      "path": "tests/test_r8_update.py",
+      "sha256": "42b055579612e52639c0dc5cf184f1d32b2de25820f9e8bee0a16041b6473dcb",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-77",
+      "path": "components/common/rootfs-overlay/etc/profile.d/armhpc-configuration.sh",
+      "sha256": "1bd50fd8132d83677ccb58b4e1bdb1a3fc3ce9545c848f5749959f919b23adb6",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-78",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/cli.py",
+      "sha256": "894330c6bcc912381c3ac94bb6d3ccbe8135b973a4ff6143bdbfdbc00659dbab",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-79",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/command_layout.py",
+      "sha256": "9e20e0dc1a038b7429f563838e66169c64042acaceb2eb4299e451914cfcbac5",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-80",
+      "path": "components/k3s/rootfs-overlay/usr/lib/armhpc/kube_check.py",
+      "sha256": "94ae36ab89c4b0fbbe53bc5112f1f5c830eee545be93e86eca109a9e9ab4b168",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-81",
+      "path": "components/k3s/rootfs-overlay/usr/lib/armhpc/kube_setup.py",
+      "sha256": "c0d7293aa47990901d0f8966ba105b90762461eddb0c228cc4ca0a683b89ff19",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-82",
+      "path": "components/k3s/rootfs-overlay/usr/local/sbin/armhpc-kube",
+      "sha256": "ec2f45813203c41df743cdb2102b855380dd87714f52d6e9e4af1072690b63ac",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-83",
+      "path": "components/rescue/rootfs-overlay/usr/lib/armhpc/console.py",
+      "sha256": "296e441ef770a380ef2472bbab561665eb726430b033c3720354b041860ee684",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-84",
+      "path": "components/rescue/rootfs-overlay/usr/local/sbin/armhpc-rescue",
+      "sha256": "81a34faeb4009f67cdf14eedbe9eb3bbbaec2514e382143052c3a2efff0fbaf5",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-85",
+      "path": "framework/staging.py",
+      "sha256": "f3a9c3b3c31591aff72ed46d1d370a8533ce917715320c414c4d49b2c4cac8ac",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-86",
+      "path": "scripts/verify-rescue-image.py",
+      "sha256": "d9755e3a8e40bb7b63758865cc8e22167a5f1e351f29b8914e25b2998c175238",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-87",
+      "path": "scripts/verify-ssh-setup.py",
+      "sha256": "02eefe03f313f4b32f622e2ae7171286413c027f063ecded329b969df80a7ef0",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-88",
+      "path": "tests/test_framework.py",
+      "sha256": "0b6fe74169fd38fc5f990f46e9df3718137467ce18678577aae78795337f1e53",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-89",
+      "path": "tests/test_install_admin.py",
+      "sha256": "c39a69a0cf174c030508bdb24255f7bbd9c0821f979cb46bac901addf6a2ff17",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-90",
+      "path": "tests/test_runtime_cli.py",
+      "sha256": "9358b2043e5fa94dbdbfd0e01091c8aedace468cae3cf1b79199b1dc7fa737ea",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-91",
+      "path": "docs/ADAPTERS.md",
+      "sha256": "7776c81348c8d146872bf0fba8e959591380f62ddde63340b7dc5ccc1a2759fe",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-93",
+      "path": "docs/COMMANDS.md",
+      "sha256": "f89121afbc69b4a98680ebdde64fc43b66def64e75a57a8e986c0447bc2973ac",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-94",
+      "path": "docs/SSH-SETUP.md",
+      "sha256": "7b26ad0d2d5db89852e23dffa83b8a8d6ff9fab8f5c13dbffbb618c3b5777bab",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "command-groups-95",
+      "path": "README.md",
+      "sha256": "843bb0b39dfa1c9d650c7a760016b14ea5bc8de8e1a29b6ab8c540a525a39ce4",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "ota-cli-bridge",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/ota.py",
+      "sha256": "70b9a9e56edaeae267292ab10322be3f326a5208d7efe7dbe8aadf688c0e9e41",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "ota-root-preparer",
+      "path": "tools/build/prepare-ota-root.py",
+      "sha256": "c6a355defc8b8d7ccdb63c896f21c74bd47a163eb3bec8a504f30d21274ad7c9",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "usb-console-0",
+      "path": "components/common/rootfs-overlay/usr/lib/armhpc/usb_console.py",
+      "sha256": "f7fc3c8f24fa1b8ce3f638c1d00573a790ed95a20c3378192675f96edb021d96",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "usb-console-1",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-usb-console.service",
+      "sha256": "c10076e394e79e83a397fb607a918f908d4fedf47623efdd06a07bd3882fb06b",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "usb-console-2",
+      "path": "components/common/rootfs-overlay/etc/systemd/system/serial-getty@ttyGS0.service.d/10-armhpc-usb-console.conf",
+      "sha256": "503418a05a7e5339283baff86552caee40e5389f53794d6b0ea155420e0e16f7",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "usb-console-3",
+      "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/armhpc/usb-console.json",
+      "sha256": "56927d38d4c8a37a7d817f0b3085da874ce51f3c9b195ad8571be05e2c21dd46",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "usb-console-4",
+      "path": "tests/test_usb_console.py",
+      "sha256": "8009fa5c00bf32e583fb0b4aad6cfef1ad37585a3a034a657b595e4d9c3c6480",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "kernel-fix-board-oect-usb2-peripheral-power",
+      "path": "adapters/boards/wxy-oect-original/armbian/kernel-6.12.111/board-oect-usb2-peripheral-power.patch",
+      "sha256": "5ef08b466d19f2c8c7d79e13ce0e5e64ff4739be484149d9021466e429d0391e",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "rootfs",
+      "path": "tools/build/rootfs.py",
+      "sha256": "5910739ecab21a7dee448a14c9a944911bc8c1140b6819f4269abc3098a66c0d",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "prepare-oect-squashfs",
+      "path": "tools/build/prepare-oect-squashfs.py",
+      "sha256": "1665bdd919c81918427df0144783cc600a23b1d15918afc374cd451f21b20d66",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "assemble-oect-squashfs",
+      "path": "tools/build/assemble-oect-squashfs.py",
+      "sha256": "2841c045f9f6f65392510b80838ec2ce20f920706b44ba9372710221175f4b5b",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "prepare-oect-release",
+      "path": "tools/build/prepare-oect-release.py",
+      "sha256": "b7f0be7724da82239a9cac2cff491cc0e824dbfb43bcf60d60a275a585113a7d",
+      "acquire": {
+        "type": "repository"
+      }
+    }
+  ],
+  "blockers": [
+    "Internal watchdog reset does not restore startup/network; cold power restores Rescue. See docs/KNOWN-ISSUES.md.",
+    "Full kexec/device handoff/early-kernel recovery has not been accepted."
+  ],
+  "validation_todo": [
+    "Validate the matching permanent boot component licensing and corresponding source for each firmware distribution."
+  ],
+  "firmware": [],
+  "kernel_requirements": {
+    "CONFIG_STMMAC_ETH": [
+      "y"
+    ],
+    "CONFIG_STMMAC_PLATFORM": [
+      "y"
+    ],
+    "CONFIG_DWMAC_ROCKCHIP": [
+      "y"
+    ],
+    "CONFIG_REALTEK_PHY": [
+      "y"
+    ],
+    "CONFIG_GPIO_ROCKCHIP": [
+      "y"
+    ],
+    "CONFIG_ROCKCHIP_IODOMAIN": [
+      "y"
+    ],
+    "CONFIG_REGULATOR_FIXED_VOLTAGE": [
+      "y"
+    ],
+    "CONFIG_REGULATOR_PWM": [
+      "y"
+    ],
+    "CONFIG_PWM_ROCKCHIP": [
+      "y"
+    ],
+    "CONFIG_MMC_SDHCI_OF_DWCMSHC": [
+      "y"
+    ],
+    "CONFIG_LEDS_GPIO": [
+      "y"
+    ],
+    "CONFIG_LEDS_TRIGGERS": [
+      "y"
+    ],
+    "CONFIG_LEDS_TRIGGER_HEARTBEAT": [
+      "y"
+    ]
+  },
+  "rescue_runtime": {
+    "authentication": "administrator credentials provisioned at installation",
+    "ethernet_mac_policy": "vendor LAN_MAC_ID, otherwise random persisted in Rescue",
+    "hostname_policy": "armhpc-rescue- plus the last four MAC hex digits",
+    "initramfs_policy": "raw bytes, no legacy uImage ramdisk header for the original signed loader",
+    "disk_discovery": "explicit lsblk tree and numeric selection",
+    "rgb": "rescue yellow; normal green; fatal red; optional blue heartbeat",
+    "performance": "performance governors within existing hardware OPPs; eMMC HS200",
+    "phy_led": "PHY parent device/of_node and lan-N hardware offload",
+    "write_confirmation": "explicit y/N with disk summary and identity recheck",
+    "normal_hostname": "armhpc- plus final four MAC hex digits",
+    "timekeeping": "chrony plus RTC-less boot floor and synchronised-time checkpoint",
+    "command_interface": {
+      "normal": "armhpc",
+      "rescue": "armhpc-rescue",
+      "kube": "armhpc-kube",
+      "phy_led_public_command": false,
+      "source_only": true
+    }
+  },
+  "ota": {
+    "engine_repository": "https://github.com/ArmbianHPC/armhpc-ota",
+    "anchor_abi": "armhpc-anchor-squashfs-v2",
+    "hardware_acceptance_passed": false,
+    "daily_bootloader_updates": false,
+    "runtime_embedded": true,
+    "existing_img_rebuilt": false,
+    "development_write_authorized": true,
+    "squashfs_layout": {
+      "layout": "oect-squashfs-ab-v2",
+      "anchor_abi": "armhpc-anchor-squashfs-v2",
+      "agent_version": "1.0.0",
+      "factory_prepartitioned": true,
+      "rescue_slot_bytes": 536870912,
+      "shared_ext4": true,
+      "hardware_verified": false,
+      "builder": "tools/build/assemble-oect-squashfs.py",
+      "compression_benchmark": "tools/build/compare-squashfs.py"
+    }
+  },
+  "usb_console": {
+    "controller_node": "/usb@fcc00000",
+    "linux_role": "peripheral",
+    "function": "CDC ACM",
+    "default_enabled": true,
+    "hardware_verified": false
+  }
+}

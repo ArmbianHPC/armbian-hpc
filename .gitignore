@@ -1,0 +1,29 @@
+# Large upstream repositories and source caches stay local.
+/sources/*
+!/sources/README.md
+/cache/*
+!/cache/README.md
+/build/
+# Device-local inputs are prepared by the owner, outside published sources.
+/local/
+/private/
+*.pub
+authorized_keys
+id_rsa
+id_ed25519
+*.pem
+*.key
+*.bin
+*.itb
+*.elf
+/k3s
+**/usr/local/bin/k3s
+k3s-arm64
+k3s-armhf
+k3s-airgap-images-*
+__pycache__/
+*.py[cod]
+.pytest_cache/
+# Built disk images and compressed variants are published as Release assets.
+*.img
+*.img.*

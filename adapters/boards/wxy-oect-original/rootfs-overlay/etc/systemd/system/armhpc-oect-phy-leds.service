@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=OECT RTL8211F hardware link and activity LEDs
+After=armhpc-firstboot.service systemd-networkd.service
+Wants=systemd-networkd.service
+ConditionPathExists=/etc/armhpc/phy-led.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/phy_leds.py
+RemainAfterExit=yes
+TimeoutStartSec=30
+NoNewPrivileges=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

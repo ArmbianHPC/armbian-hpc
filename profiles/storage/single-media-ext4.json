@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "storage",
+  "id": "single-media-ext4",
+  "name": "单盘 ext4 boot / root / data",
+  "strategy": "single-media",
+  "boot_media": "sd",
+  "external_interface": null,
+  "partition_table": "gpt",
+  "filesystem_policy": "all-ext4",
+  "alignment_bytes": 1048576,
+  "boot": {"filesystem": "ext4", "label": "SYSTEM_BOOT", "mountpoint": "/boot", "normal_mount_mode": "rw", "size_bytes": 536870912},
+  "rescue": null,
+  "root": {"filesystem": "ext4", "label": "SYSTEM_ROOT", "mountpoint": "/", "size_bytes": 17179869184},
+  "data": {"filesystem": "ext4", "label": "SYSTEM_DATA", "mountpoint": "/data", "size_policy": "remaining_aligned_space"},
+  "discovery": {"reject_ambiguous_labels": true},
+  "recovery": {
+    "execution_environment": "external_rescue",
+    "rootfs_archive": "factory-rootfs.tar.zst",
+    "default_mode": "system_repair",
+    "default_preserve_data_partition": true,
+    "require_matching_boot_and_modules": true,
+    "preserve_metadata": ["uid", "gid", "mode", "symlinks", "acl", "xattrs", "capabilities"]
+  },
+  "kernel_requirements": {"CONFIG_EXT4_FS": ["y", "m"]},
+  "blockers": [
+    "需要按板卡保留引导区，生成单盘 boot/root/data 布局和对应安装程序。",
+    "需要接入外部救援环境、工厂归档及启动文件和内核模块匹配检查。"
+  ],
+  "validation_todo": [
+    "验证单盘启动、数据挂载及通过外部救援环境保留数据恢复系统。"
+  ]
+}

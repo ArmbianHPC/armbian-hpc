@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "workload",
+  "id": "base-server",
+  "name": "基础 SSH 服务器",
+  "architectures": ["arm64", "armhf"],
+  "component": "none",
+  "packages": [],
+  "kernel_requirements": {},
+  "description": "不加入应用配置引导；swap 和 zram 由操作系统及具体板卡策略决定。"
+}

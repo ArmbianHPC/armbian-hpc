@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "example-arm64-board",
+  "name": "填写 ARM64 板卡名称和硬件版本",
+  "status": "draft",
+  "soc": "example-arm64",
+  "architectures": [
+    "arm64"
+  ],
+  "storage_interfaces": [
+    "sd",
+    "emmc",
+    "usb"
+  ],
+  "boot": {
+    "dtb": "REPLACE_WITH_BOARD.dtb",
+    "dts": "adapters/boards/example-arm64-board/dts/REPLACE_WITH_BOARD.dts",
+    "raw_layout_status": "requires_device_verification",
+    "chain": {
+      "provider": "user",
+      "scope": "complete-board-chain",
+      "build_in_framework": false,
+      "include_in_image": false,
+      "write_by_framework": false,
+      "preserve_existing_regions": true
+    }
+  },
+  "armbian_board": null,
+  "backend_files": {},
+  "inputs": [],
+  "blockers": [
+    "模板：接口列表只是占位，必须按实际板卡填写；需要 DTS、启动链和实机验证。"
+  ],
+  "firmware": []
+}

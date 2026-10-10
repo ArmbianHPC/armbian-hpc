@@ -1,0 +1,69 @@
+From: ARMHPC local board adaptation
+Subject: [PATCH] phy: rockchip: preserve peripheral PHY during gadget hot-plug
+
+Guard the five autonomous OTG/charger power-off sites for peripheral-only ports.
+Controller power_off and host-port management are retained. The inline guards
+avoid introducing a new function/type into the base BTF used by existing modules.
+Based on Andreas Zdziarstek's 2026-07-06 RFC; this is a local backport, not an
+upstream acceptance claim.
+Origin: https://lore.kernel.org/linux-phy/20260706223627.113814-2-andreas.zdziarstek@gmail.com/
+
+--- a/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
++++ b/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
+@@ -658,9 +658,9 @@
+ 
+ 	switch (rport->state) {
+ 	case OTG_STATE_UNDEFINED:
+ 		rport->state = OTG_STATE_B_IDLE;
+-		if (!vbus_attach)
++		if (!vbus_attach && rport->mode != USB_DR_MODE_PERIPHERAL)
+ 			rockchip_usb2phy_power_off(rport->phy);
+ 		fallthrough;
+ 	case OTG_STATE_B_IDLE:
+ 		if (extcon_get_state(rphy->edev, EXTCON_USB_HOST) > 0) {
+@@ -685,9 +685,10 @@
+ 					cable = EXTCON_CHG_USB_SDP;
+ 					break;
+ 				case POWER_SUPPLY_TYPE_USB_DCP:
+ 					dev_dbg(&rport->phy->dev, "dcp cable is connected\n");
+-					rockchip_usb2phy_power_off(rport->phy);
++					if (rport->mode != USB_DR_MODE_PERIPHERAL)
++						rockchip_usb2phy_power_off(rport->phy);
+ 					notify_charger = true;
+ 					sch_work = true;
+ 					cable = EXTCON_CHG_USB_DCP;
+ 					break;
+@@ -731,17 +732,19 @@
+ 			rphy->chg_state = USB_CHG_STATE_UNDEFINED;
+ 			rphy->chg_type = POWER_SUPPLY_TYPE_UNKNOWN;
+ 			rport->state = OTG_STATE_B_IDLE;
+ 			delay = 0;
+-			rockchip_usb2phy_power_off(rport->phy);
++			if (rport->mode != USB_DR_MODE_PERIPHERAL)
++				rockchip_usb2phy_power_off(rport->phy);
+ 		}
+ 		sch_work = true;
+ 		break;
+ 	case OTG_STATE_A_HOST:
+ 		if (extcon_get_state(rphy->edev, EXTCON_USB_HOST) == 0) {
+ 			dev_dbg(&rport->phy->dev, "usb otg host disconnect\n");
+ 			rport->state = OTG_STATE_B_IDLE;
+-			rockchip_usb2phy_power_off(rport->phy);
++			if (rport->mode != USB_DR_MODE_PERIPHERAL)
++				rockchip_usb2phy_power_off(rport->phy);
+ 		}
+ 		break;
+ 	default:
+ 		break;
+@@ -810,9 +813,10 @@
+ 	dev_dbg(&rport->phy->dev, "chg detection work state = %d\n",
+ 		rphy->chg_state);
+ 	switch (rphy->chg_state) {
+ 	case USB_CHG_STATE_UNDEFINED:
+-		if (!rport->suspended && !vbus_attach)
++		if (!rport->suspended && !vbus_attach &&
++		    rport->mode != USB_DR_MODE_PERIPHERAL)
+ 			rockchip_usb2phy_power_off(rport->phy);
+ 		/* put the controller in non-driving mode */
+ 		if (!vbus_attach)
+ 			property_enable(base, &rphy->phy_cfg->chg_det.opmode, false);

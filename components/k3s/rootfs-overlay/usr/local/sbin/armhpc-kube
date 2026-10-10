@@ -1,0 +1,6 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: GPL-2.0-only
+import sys
+sys.path.insert(0,'/usr/lib/armhpc')
+from cli import kube_main
+raise SystemExit(kube_main())

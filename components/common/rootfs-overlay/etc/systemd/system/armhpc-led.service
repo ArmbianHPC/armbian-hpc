@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC RGB mode and serious-error indication
+ConditionPathExists=/etc/armhpc/led.json
+After=local-fs.target boot.mount
+Before=armhpc-firstboot.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/leds.py --daemon
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

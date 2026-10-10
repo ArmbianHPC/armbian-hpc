@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "kind": "storage",
+  "id": "emmc-external-ext4-64g",
+  "name": "eMMC boot + rescue / 外置 ext4 系统与数据",
+  "strategy": "split-boot-external",
+  "boot_media": "emmc",
+  "external_interface": "sata",
+  "partition_table": "gpt",
+  "filesystem_policy": "all-ext4",
+  "alignment_bytes": 1048576,
+  "boot": {
+    "filesystem": "ext4",
+    "label": "SYSTEM_BOOT",
+    "mountpoint": "/boot",
+    "normal_mount_mode": "ro",
+    "size_bytes": null
+  },
+  "rescue": {
+    "filesystem": "ext4",
+    "label": "SYSTEM_RESCUE",
+    "mountpoint": null,
+    "size_policy": "remaining_emmc_after_reserved_regions_and_boot"
+  },
+  "root": {
+    "filesystem": "ext4",
+    "label": "SYSTEM_ROOT",
+    "mountpoint": "/",
+    "size_bytes": 68719476736
+  },
+  "data": {
+    "filesystem": "ext4",
+    "label": "SYSTEM_DATA",
+    "mountpoint": "/data",
+    "size_policy": "remaining_external_aligned_space"
+  },
+  "discovery": {
+    "reject_ambiguous_labels": true
+  },
+  "recovery": {
+    "execution_environment": "emmc_rescue",
+    "rootfs_archive": "factory-rootfs.tar.zst",
+    "default_mode": "system_repair",
+    "default_preserve_data_partition": true,
+    "require_matching_boot_and_modules": true,
+    "preserve_metadata": [
+      "uid",
+      "gid",
+      "mode",
+      "symlinks",
+      "acl",
+      "xattrs",
+      "capabilities"
+    ],
+    "factory_archive_budget_bytes": 2147483648,
+    "factory_archive_budget_status": "estimate_requires_actual_size_check"
+  },
+  "kernel_requirements": {
+    "CONFIG_EXT4_FS": [
+      "y",
+      "m"
+    ]
+  },
+  "blockers": [
+    "当前磁盘身份和分区检查接入 OECT 本地候选，其他板卡需要适配和验收。",
+    "工厂 rootfs、启动文件和独立 Rescue 已构建；通用 Release 归档检查、节点重新初始化及全量 data 重置仍待接入。"
+  ],
+  "validation_todo": [
+    "需要在实机验证保留数据的系统恢复、全量重置及丢失外置盘时进入 Rescue。"
+  ]
+}

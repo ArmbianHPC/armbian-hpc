@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC early time synchronization and periodic checkpoint
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=30s
+AccuracySec=1s
+Unit=armhpc-clock-checkpoint.service
+
+[Install]
+WantedBy=timers.target

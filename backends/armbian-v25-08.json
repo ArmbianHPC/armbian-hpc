@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "backend",
+  "id": "armbian-v25-08",
+  "name": "Armbian v25.08",
+  "status": "source_prepared",
+  "engine": "armbian",
+  "architectures": [
+    "arm64",
+    "armhf"
+  ],
+  "source": {
+    "url": "https://github.com/armbian/build",
+    "ref": "v25.08",
+    "commit": "147b9a23f09fae4d5ef8e73cf07ee69652ff4976"
+  },
+  "inputs": [
+    {
+      "id": "build-framework",
+      "path": "cache/sources/armbian/armbian-build-v25.08-147b9a23f09f-lf.tar",
+      "sha256": "b66249d950c77196a9f57be6d0ce444e086a788d33993947a59cbfdea7fdd53c",
+      "reuse_paths": [
+        "cache/sources/oect-6.12/archives/armbian-build-v25.08-147b9a23f09f.tar"
+      ],
+      "acquire": {
+        "type": "git-archive",
+        "url": "https://github.com/armbian/build",
+        "commit": "147b9a23f09fae4d5ef8e73cf07ee69652ff4976",
+        "git_dir": "sources/armbian-build",
+        "prefix": "armbian-build-v25.08/"
+      }
+    }
+  ]
+}

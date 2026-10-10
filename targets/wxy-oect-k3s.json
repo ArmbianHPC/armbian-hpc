@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "target",
+  "id": "wxy-oect-k3s",
+  "name": "OECT / SATA ext4 / K3s",
+  "status": "source_prepared",
+  "architecture": "arm64",
+  "backend": "armbian-v25-08",
+  "board": "wxy-oect-original",
+  "os": "debian-bookworm-minimal",
+  "storage": "emmc-sata-squashfs-ab",
+  "workload": "k3s-online",
+  "overrides": {
+    "storage": {
+      "external_interface": "sata",
+      "boot": {
+        "label": "OECT_BOOT"
+      },
+      "rescue": {
+        "label": "OECT_RESCUE"
+      },
+      "root": {
+        "label": "OECT_ROOT"
+      },
+      "data": {
+        "label": "OECT_DATA"
+      }
+    }
+  }
+}

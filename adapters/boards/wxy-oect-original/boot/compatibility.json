@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "board": "wxy-oect-original",
+  "reference_image": {
+    "idb_header": "RKSS",
+    "signed_idb_copies": 5,
+    "rsa_bits": 2048,
+    "rsa_pss_sha256_verified_against_embedded_key": true,
+    "device_secure_boot_enabled": null,
+    "physical_flash_readback_verified": false
+  },
+  "kernel_payload": {
+    "initramfs_format": "raw",
+    "legacy_uimage_ramdisk_supported": false,
+    "reference_uboot_fit_sha256": "8bf579bb63ce5bd33835adade7a02e1f50ffe415afccc866a99c62548697eab5",
+    "reference_initramfs": "raw XZ stream through uInitrd symlink",
+    "extlinux_style": "single entry with explicit Rescue PARTUUID fallback",
+    "basis": "Reference image bytes, original U-Boot ramdisk disassembly, and exact-byte ARM64 initramfs reproduction",
+    "physical_r6_verified": true,
+    "physical_r6_verification_scope": "User observed Linux Rescue boot, SSH and 1000 Mbps full-duplex Ethernet; SATA and sustained-load tests pending",
+    "physical_r6_feedback_date": "2026-10-06"
+  },
+  "rejected_candidates": [
+    {
+      "components": {
+        "idbloader": "d7cc75b98660a8cb3a1fc83fc848a114096636ffb5434818842543b25c1dc808",
+        "uboot": "e7f5d78c068e403a1288c75b5fc28e4b081da6bbb3260dfc5972c1a708196339"
+      },
+      "date": "2026-10-05",
+      "source": "user report",
+      "tested_image": "wxy-oect-recompile-20261004-r4",
+      "outcome": "User reports r4 cold-boot MaskROM and r3 MaskROM after flashing/automatic restart",
+      "reason": "OECT r4 冷启动及网络候选 r3 刷写后自动重启均已报告 MaskROM；该 IDB/U-Boot 组合拒绝复用。实际 eMMC 回读失败，永久引导链兼容性仍待定位。",
+      "retest": {
+        "loader_file": "rk356x-MiniLoaderAll.bin",
+        "loader_sha256": "1cdd418032195210f191445ed96e2da5ea83d2cfe880c912ebec635839d76542",
+        "flashing_access_restored_reported": true,
+        "selected_raw_img_confirmed": true,
+        "completion_reported": false,
+        "cold_boot_outcome": null
+      },
+      "tested_images": [
+        "wxy-oect-recompile-20261004-r4",
+        "wxy-oect-network-review-20261005-r3"
+      ],
+      "r3_report": {
+        "flashed": true,
+        "post_flash_mode": "MaskROM",
+        "temporary_loader_address": "0xCCCCCCCC",
+        "system_start_address": "0x00000000",
+        "force_write_by_address": true,
+        "readback_export_size_reported_bytes": 0
+      }
+    }
+  ]
+}

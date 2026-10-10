@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ARMHPC project <build@armhpc.invalid>
+Date: Sun, 4 Oct 2026 01:40:00 +0800
+Subject: Adapt Armbian drivers to Linux 6.12.111 backported APIs
+
+Linux 6.12.111 includes the net_device monitor-channel argument and
+reset-control flag interface. Preserve optional exclusive reset semantics.
+
+---
+diff --git a/drivers/net/wireless/rtl8723ds/os_dep/linux/ioctl_cfg80211.c b/drivers/net/wireless/rtl8723ds/os_dep/linux/ioctl_cfg80211.c
+--- a/drivers/net/wireless/rtl8723ds/os_dep/linux/ioctl_cfg80211.c
++++ b/drivers/net/wireless/rtl8723ds/os_dep/linux/ioctl_cfg80211.c
+@@ -4541,7 +4541,7 @@
+ }
+ 
+ static int cfg80211_rtw_set_monitor_channel(struct wiphy *wiphy
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0))
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 111))
+ 	, struct net_device *dev
+ 	, struct cfg80211_chan_def *chandef
+ #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+diff --git a/drivers/net/wireless/rtl8189es/os_dep/linux/ioctl_cfg80211.c b/drivers/net/wireless/rtl8189es/os_dep/linux/ioctl_cfg80211.c
+--- a/drivers/net/wireless/rtl8189es/os_dep/linux/ioctl_cfg80211.c
++++ b/drivers/net/wireless/rtl8189es/os_dep/linux/ioctl_cfg80211.c
+@@ -6099,7 +6099,7 @@
+ #endif /*#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 6, 0))*/
+ 
+ static int cfg80211_rtw_set_monitor_channel(struct wiphy *wiphy
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0))
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 111))
+ 	, struct net_device *dev
+ 	, struct cfg80211_chan_def *chandef
+ #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+diff --git a/drivers/net/wireless/rtl8192eu/os_dep/linux/ioctl_cfg80211.c b/drivers/net/wireless/rtl8192eu/os_dep/linux/ioctl_cfg80211.c
+--- a/drivers/net/wireless/rtl8192eu/os_dep/linux/ioctl_cfg80211.c
++++ b/drivers/net/wireless/rtl8192eu/os_dep/linux/ioctl_cfg80211.c
+@@ -6021,7 +6021,7 @@
+ }
+ 
+ static int cfg80211_rtw_set_monitor_channel(struct wiphy *wiphy
+-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0))
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 111))
+ 	, struct net_device *dev
+ 	, struct cfg80211_chan_def *chandef
+ #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+diff --git a/drivers/staging/media/rkvdec/rkvdec.c b/drivers/staging/media/rkvdec/rkvdec.c
+--- a/drivers/staging/media/rkvdec/rkvdec.c
++++ b/drivers/staging/media/rkvdec/rkvdec.c
+@@ -1280,7 +1280,7 @@
+ 	}
+ 
+ 
+-	rkvdec->rstc = devm_reset_control_array_get(&pdev->dev, false, true);
++	rkvdec->rstc = devm_reset_control_array_get_optional_exclusive(&pdev->dev);
+ 	if (IS_ERR(rkvdec->rstc)) {
+ 		dev_err(&pdev->dev,
+ 			"get resets failed %ld\n", PTR_ERR(rkvdec->rstc));
+-- 
+ARMHPC

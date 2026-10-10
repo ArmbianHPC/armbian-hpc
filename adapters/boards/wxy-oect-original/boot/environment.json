@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "format": "uboot-env-crc32-le",
+  "offset_bytes": 150994944,
+  "size_bytes": 131072,
+  "record_size_bytes": 65536,
+  "sha256": "b83a4fa7cf0f537268d88cd5be24920fcfd97e08616181fa9a6d03151614f161",
+  "source": {
+    "url": "https://github.com/ophub/u-boot/blob/79577c51da4fafb53a91b6482daafd356aba05ac/u-boot/rockchip/wxy-oect/env.bin",
+    "commit": "79577c51da4fafb53a91b6482daafd356aba05ac",
+    "git_blob": "a9501ce0df2885bedce56c13b4936875348fb684",
+    "matches_user_reference_image": true,
+    "reference_image_sha256": "216e5be56113ceba6ca1835a050bb74b3674e7d9605db08645f924f1b7c05aab",
+    "redistribution_reviewed": false
+  },
+  "records": [
+    {
+      "sha256": "0bcc96a4bbc35a3e0409a7905a58b68c32074bb2206d746ea2a46f503192c717",
+      "expected_variables": {
+        "bootcmd": "run extlinux_env; if test ${enabled_usbboot} -eq 1; then usb start; run detect_usb; fi; run bootcmd_emmc",
+        "bootcmd_emmc": "sysboot mmc 0:1 any 0x00c00000 /extlinux/extlinux.conf",
+        "extlinux_env": "setenv fdt_addr_r 0x12000000;setenv kernel_addr_r 0x02000000;setenv ramdisk_addr_r 0x12180000"
+      }
+    },
+    {
+      "sha256": "f2685856d74edfcc79cd78523c93f245e7856ab07470a1b22dccc90b5f88f6b3",
+      "expected_variables": {
+        "bootcmd": "run bootcmd_usb1;boot_fit",
+        "bootcmd_emmc": "sysboot mmc 0:7 any 0x00c00000 /extlinux/extlinux.conf",
+        "extlinux_env": "setenv fdt_addr_r 0x12000000;setenv kernel_addr_r 0x02000000;setenv ramdisk_addr_r 0x12180000"
+      }
+    }
+  ],
+  "notes": [
+    "The complete upstream board environment is two CRC32 records without a redundancy flag byte.",
+    "Preserve the complete pinned file for this private diagnostic; record selection by the original U-Boot is not hardware verified.",
+    "No environment binary, temporary MiniLoader, or user identity is stored in the source repository."
+  ]
+}

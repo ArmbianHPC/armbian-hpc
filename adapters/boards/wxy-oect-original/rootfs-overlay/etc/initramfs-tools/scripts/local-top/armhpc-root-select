@@ -1,0 +1,98 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+# initramfs-tools reloads /conf/param.conf after each local-top script.
+PREREQ=""
+prereqs() { echo "$PREREQ"; }
+case "${1:-}" in prereqs) prereqs; exit 0;; esac
+set -eu
+. /conf/armhpc-root.conf
+. /scripts/functions
+# A signed OTA bootstrap has already selected an exact PARTUUID root and its matched kernel.
+# Preserve that selection, including Rescue B. The legacy selector remains for legacy boots.
+for argument in $(cat /proc/cmdline); do
+    case "$argument" in
+        armhpc.target=system|armhpc.target=rescue) exit 0;;
+        armhpc.anchor=1) panic 'ARMHPC anchor did not complete kexec'; exit 1;;
+    esac
+done
+wait_for_udev 10
+mode=normal
+for argument in $(cat /proc/cmdline); do
+    case "$argument" in armhpc.mode=rescue) mode=rescue;; esac
+done
+mkdir -p /run/armhpc-root-probe
+led_channel() {
+    name=$1; brightness=$2; trigger=$3
+    path="/sys/class/leds/$name:status"
+    if [ -w "$path/brightness" ] && [ -w "$path/trigger" ]; then
+        echo none > "$path/trigger" || true
+        echo "$brightness" > "$path/brightness" || true
+        [ "$trigger" = none ] || echo "$trigger" > "$path/trigger" || true
+    fi
+}
+boot_colour() {
+    case "$1" in
+        rescue) led_channel red 1 none; led_channel green 1 none; led_channel blue 0 heartbeat;;
+        normal) led_channel red 0 none; led_channel green 1 none; led_channel blue 0 heartbeat;;
+        error) led_channel blue 0 none; led_channel green 0 none; led_channel red 1 none;;
+    esac
+}
+usable() {
+    label=$1
+    # Query all block devices; blkid -L would silently choose a duplicate label.
+    devices=$(blkid -c /dev/null -t "LABEL=$label" -o device || true)
+    set -- $devices
+    [ "$#" -eq 1 ] || return 1
+    device=$1
+    [ "$(blkid -c /dev/null -s TYPE -o value "$device")" = ext4 ] || return 1
+    mount -t ext4 -o ro,noload "$device" /run/armhpc-root-probe || return 1
+    okay=false
+    if [ -x /run/armhpc-root-probe/usr/lib/systemd/systemd ] && \
+        [ -d "/run/armhpc-root-probe/lib/modules/$ARMHPC_KERNEL" ]; then
+        if [ -n "${ARMHPC_KERNEL_BUILD_ID:-}" ]; then
+            marker="/run/armhpc-root-probe/lib/modules/$ARMHPC_KERNEL/armhpc-kernel-build-id"
+            if [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$ARMHPC_KERNEL_BUILD_ID" ]; then
+                umount /run/armhpc-root-probe || return 1
+                return 1
+            fi
+        fi
+        if [ "$label" = "$ARMHPC_RESCUE_LABEL" ]; then
+            [ -f /run/armhpc-root-probe/etc/armhpc/rescue-environment ] && okay=true
+            if [ -f /run/armhpc-root-probe/etc/armhpc/force-rescue ]; then mode=rescue; fi
+        else
+            [ -f /run/armhpc-root-probe/etc/armhpc/installation-complete.json ] && okay=true
+        fi
+    fi
+    umount /run/armhpc-root-probe || return 1
+    "$okay" || return 1
+    selected=$device
+}
+# Read an administrator's one-boot Rescue request before selecting SATA.
+usable "$ARMHPC_RESCUE_LABEL" || true
+if [ "$mode" = normal ]; then
+    attempts=0
+    while [ "$attempts" -lt 15 ]; do
+        if usable "$ARMHPC_ROOT_LABEL"; then
+            printf "ROOT='%s'\nROOTFSTYPE='ext4'\n" "$selected" >> /conf/param.conf
+            echo "ARMHPC: normal root $selected" > /dev/console
+            boot_colour normal
+            exit 0
+        fi
+        sleep 1
+        attempts=$((attempts + 1))
+    done
+fi
+attempts=0
+while [ "$attempts" -lt 15 ]; do
+    if usable "$ARMHPC_RESCUE_LABEL"; then
+        printf "ROOT='%s'\nROOTFSTYPE='ext4'\n" "$selected" >> /conf/param.conf
+        echo "ARMHPC: using independent Rescue $selected" > /dev/console
+        boot_colour rescue
+        exit 0
+    fi
+    sleep 1
+    attempts=$((attempts + 1))
+done
+boot_colour error
+panic 'ARMHPC: no unique, mountable Rescue with matching kernel modules.'
+exit 1

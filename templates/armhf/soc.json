@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "soc",
+  "id": "example-armv7",
+  "name": "填写 ARMv7 芯片名称",
+  "status": "draft",
+  "architectures": [
+    "armhf"
+  ],
+  "backend_families": {
+    "armbian-v25-08": "REPLACE_WITH_ARMHF_FAMILY"
+  },
+  "kernel": {
+    "family": "REPLACE_WITH_KERNEL_FAMILY",
+    "branch": "current",
+    "version": "REPLACE_WITH_VERSION",
+    "source": "REPLACE_WITH_SOURCE_URL",
+    "ref": "REPLACE_WITH_PINNED_REF",
+    "commit": "REPLACE_WITH_FULL_COMMIT"
+  },
+  "kernel_requirements": {},
+  "inputs": [
+    {
+      "id": "kernel-source",
+      "path": "cache/sources/linux/REPLACE_WITH_KERNEL_ARCHIVE.tar.xz",
+      "sha256": "REPLACE_WITH_SHA256",
+      "acquire": {
+        "type": "https",
+        "url": "REPLACE_WITH_IMMUTABLE_HTTPS_ARCHIVE_URL"
+      }
+    }
+  ],
+  "blockers": [
+    "模板：需要填写芯片内核来源、架构、family、必需驱动及源码 SHA256。"
+  ]
+}

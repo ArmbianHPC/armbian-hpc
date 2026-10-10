@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "target",
+  "id": "example-armv7-base",
+  "name": "填写 ARM32 构建目标名称",
+  "status": "draft",
+  "architecture": "armhf",
+  "backend": "armbian-v25-08",
+  "board": "example-armv7-board",
+  "os": "debian-bookworm-minimal",
+  "storage": "single-media-ext4",
+  "workload": "base-server"
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "boot_label": "OECT_BOOT",
+  "rescue_label": "OECT_RESCUE",
+  "vendor_mac_index": 0,
+  "fallback": "random_persisted_in_rescue",
+  "rescue_hostname": "armhpc-rescue-{mac_last_four_hex_digits}"
+}

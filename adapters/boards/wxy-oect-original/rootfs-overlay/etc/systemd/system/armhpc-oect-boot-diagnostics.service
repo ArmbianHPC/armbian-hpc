@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC OECT boot and Ethernet diagnostics
+After=local-fs.target systemd-journald.service systemd-networkd.service
+Wants=systemd-networkd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/oect-boot-diagnostics.py
+TimeoutStartSec=150
+RemainAfterExit=yes
+LogsDirectory=armhpc
+LogsDirectoryMode=0700
+UMask=0077
+PrivateTmp=yes
+ProtectHome=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

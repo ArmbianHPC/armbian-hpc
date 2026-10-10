@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC calibrated or estimated time checkpoint
+After=chrony.service armhpc-clock-floor.service var-lib-armhpc-ota.mount
+Wants=armhpc-clock-floor.service
+ConditionPathExists=/etc/armhpc/image-build-time.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/clock_floor.py --checkpoint
+TimeoutStartSec=10
+NoNewPrivileges=yes

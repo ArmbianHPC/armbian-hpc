@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "controller_address": "fcc00000",
+  "vendor_id": "0x0525",
+  "product_id": "0xa4a7",
+  "descriptor_scope": "local Linux gadget development console",
+  "authenticated_login": true,
+  "physical_port": "USB2.0 flashing/OTG connector",
+  "kernel_fix": "oect-usb2-peripheral-power-r11",
+  "hotplug_validation": "pending physical OECT acceptance"
+}
