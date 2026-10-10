@@ -45,7 +45,7 @@ def source_audit(root, reference='HEAD'):
             content = git_command(root, 'cat-file', 'blob', blob, stdout=subprocess.PIPE).stdout
             require(not content.startswith((b'\x7fELF', b'version https://git-lfs.github.com/spec/')),
                     '可执行二进制或 Git LFS 指针进入源码。')
-            require(not re.search(rb'-----BEGIN (?:OPENSSH |RSA |EC |DSA )?PRIVATE KEY-----', content),
+            require(not re.search(rb'(?m)^-----BEGIN (?:OPENSSH |RSA |EC |DSA )?PRIVATE KEY-----\r?\n[A-Za-z0-9+/]{40,}', content),
                     '私钥进入源码。')
         except ConfigError as exc:
             errors.append(relative + ': ' + str(exc))
