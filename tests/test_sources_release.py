@@ -291,7 +291,7 @@ class SourceReleaseTests(unittest.TestCase):
         self.assertFalse(record['temporary_loader_included'])
         self.assertFalse(record['assembly_implemented'])
         self.assertEqual(list(output.rglob('uboot.bin')), [])
-        self.assertTrue(any('单个 IMG' in value['reason'] for value in resolved['blockers']))
+        self.assertTrue(any('kexec' in value['reason'] for value in resolved['blockers']))
 
     def test_unreviewed_permanent_component_is_rejected(self):
         self.permanent_boot_fixture()
