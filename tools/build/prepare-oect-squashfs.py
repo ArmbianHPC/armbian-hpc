@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
 """Prepare explicit paired roots for the OECT SquashFS A/B image builder."""
 from pathlib import Path
-import argparse,importlib.util,json,os,shutil,subprocess,hashlib
+import argparse,importlib.util,json,os,shutil,subprocess,hashlib,runpy
 parser=argparse.ArgumentParser(description=__doc__)
 for n in ('project','ota-source','work','input-roots','trust-public-key','watchdog-binary','boot-manifest'):
     parser.add_argument('--'+n,type=Path,required=True)
@@ -41,7 +41,7 @@ for target,n in [('system','normal'),('rescue','rescue')]:
                      'var/lib/armhpc/ota'):
         remove(root/relative)
     tools.overlay(root,project/'components/common/rootfs-overlay');tools.overlay(root,project/'adapters/boards/wxy-oect-original/rootfs-overlay')
-    if target=='rescue':tools.overlay(root,project/'components/rescue/rootfs-overlay')
+    tools.overlay(root,project/('components/rescue/rootfs-overlay' if target=='rescue' else 'components/k3s/rootfs-overlay'))
     for relative in ('etc/initramfs-tools/scripts/local-top/armhpc-root-select','etc/initramfs-tools/hooks/armhpc-root-selection'):remove(root/relative)
     tools.reset_identity(root)
     run('python3',ota/'tools/install-runtime.py','--root',root,'--watchdog-binary',helper,'--bootstrap-hooks')
@@ -52,6 +52,9 @@ for target,n in [('system','normal'),('rescue','rescue')]:
     save(root/'etc/armhpc/release.json',{'release':RELEASE,'target':target,'kernel':KERNEL})
     save(root/'etc/armhpc/image-build-time.json',{'epoch':EPOCH,'revision':RELEASE})
     (root/'etc/armhpc/anchor-kernel-sha256').write_text(kernel_hash+'\n')
+    (root/'etc/armhpc/anchor-dtb-sha256').write_text(manifest['files']['dtb']['sha256']+'\n')
+    runpy.run_path(str(root/'usr/lib/armhpc/command_layout.py'))['finalize'](root, 'rescue' if target=='rescue' else 'normal')
+    run('systemctl','--root='+str(root),'enable','armhpc-clock-floor.service','armhpc-clock-checkpoint.timer','armhpc-clock-shutdown.service')
     shutil.copytree(defaults,root/'etc/armhpc/rescue-defaults',dirs_exist_ok=True)
     shutil.copy2(key,root/'etc/armhpc/ota-trust.d'/key.name)
     for p in (root/'boot').iterdir():remove(p)
