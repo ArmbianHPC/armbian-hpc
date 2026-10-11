@@ -1,22 +1,26 @@
-# Armbian HPC
+# ARMHPC
 
-ARM64／ARM32 Linux 镜像配置与构建框架，版本 **1.0.0**。框架独立原创代码采用 GPL-2.0-only；与 OTA 共用的原创模块使用兼容双许可；第三方文件保留原许可证。
+[简体中文](README.zh-CN.md)
 
-## OECT 布局与功能
+ARMHPC **1.0.0** is a configurable Linux firmware framework for ARM64 and ARM32 devices, with normal-system and Rescue environments.
 
-| 介质 | 内容 |
+## OECT support
+
+The current OECT target is the original WXY OEC Turbo with 4 GB RAM and 8 GB eMMC.
+
+| Storage | Contents |
 | --- | --- |
-| eMMC BOOT | 512 MiB ext4，内核、DTB 和 raw initramfs |
-| eMMC Rescue A/B | 各 512 MiB SquashFS，按槽位使用可写层 |
-| eMMC 共享区 | 剩余 ext4，身份、启动控制、恢复基线及维护记录 |
-| SATA 系统 | 64 GiB ext4 |
-| SATA DATA | 剩余 ext4 |
+| eMMC BOOT | 512 MiB ext4 with kernel, DTB, and raw initramfs |
+| eMMC Rescue A/B | Two 512 MiB SquashFS slots, each with its own writable layer |
+| eMMC shared area | Remaining space as ext4 for identity, boot control, recovery packages, and maintenance records |
+| SATA system | 64 GiB ext4 |
+| SATA DATA | Remaining SATA space as ext4 |
 
-系统提供网络身份初始化、MAC 存储区读取及有效随机回退、按 MAC 后四位命名、SSH、USB2 OTG 虚拟串口、RGB 状态灯、PHY 链路灯、SATA 安装／恢复及在线 K3s 配置。
+Features include device identity and MAC initialisation, hostnames based on the MAC suffix, SSH, USB2 OTG serial console, status and Ethernet LEDs, SATA installation and recovery, clock recovery, and K3s configuration.
 
-普通系统使用 `armhpc`，Rescue 使用 `armhpc-rescue`，K3s 使用 `armhpc-kube`。OTA 核心独立位于 `armhpc-ota`，框架仅提供接入与构建。
+Use `armhpc` in the normal system, `armhpc-rescue` in Rescue, and `armhpc-kube` for K3s operations. The shared OTA engine is maintained in [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota).
 
-## 配置入口
+## Configure a build
 
 ```sh
 python3 scripts/image-framework.py list
@@ -25,12 +29,31 @@ python3 scripts/image-framework.py plan wxy-oect-k3s
 python3 scripts/image-framework.py stage wxy-oect-k3s
 ```
 
-OECT 目标使用原装 4 GB + 8 GB 适配。其他板卡通过独立 SoC、板卡、后端、存储与应用配置接入；ARM32 提供架构映射及适配模板。
+Targets select a SoC, board, backend, operating system, storage layout, and workload. Other boards require their own integration. ARM32 uses the same configuration model with the corresponding architecture and helpers.
 
-## 源码与发行
+## Downloads
 
-本仓库不包含镜像、MiniLoader、私钥、用户身份或上游 K3s 二进制。镜像及压缩包作为对应 Release 附件分发。引导输入由用户提供，或按组件许可与对应源码记录接入。
+[Releases](https://github.com/ArmbianHPC/armbian-hpc/releases) use version-only titles such as `v1.0.0` and contain two firmware packages:
 
-源码发布与完整镜像发布分别检查。本次 1.0.0 提供框架源码，完整 IMG 和系统 OTA 载荷另行构建。
+```text
+armhpc_<version>_<model>_<distribution>_<kernel>_<filesystem>_<build-date>.img.xz
+armhpc-ota_<version>_<model>_<distribution>_<kernel>_<filesystem>_<build-date>.tar.xz
+```
 
-见 [构建](docs/BUILD.md)、[适配](docs/ADAPTERS.md)、[命令](docs/COMMANDS.md)、[源码与固件](docs/SOURCES.md)、[发布](docs/RELEASE.md)、[许可](THIRD_PARTY_NOTICES.md)、[已知问题](docs/KNOWN-ISSUES.md)。
+The first file is a compressed flashing image. The second contains signed system and Rescue payloads for the OTA controller. The build date is `YYYYMMDD` and reflects the actual compilation date. Firmware packages and private build inputs are kept outside this source repository.
+
+## Documentation
+
+- [Building](docs/BUILD.md)
+- [Board and component integration](docs/ADAPTERS.md)
+- [Device commands](docs/COMMANDS.md)
+- [Sources and firmware inputs](docs/SOURCES.md)
+- [Release policy](docs/RELEASE.md)
+- [v1.0.0 release notes](docs/releases/v1.0.0.md) / [简体中文](docs/releases/v1.0.0.zh-CN.md)
+- [Known issues](docs/KNOWN-ISSUES.md)
+
+## License
+
+Independent original framework code is licensed under **GPL-2.0-only**. Original modules shared with the OTA process use **GPL-2.0-only OR GPL-3.0-only**. Third-party sources retain their original licenses, authors, and provenance. See [LICENSE](LICENSE), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), and [LICENSE-MAP.json](LICENSE-MAP.json).
+
+MiniLoader, signing keys, credentials, device backups, and upstream K3s binaries are not included in the source repository.
