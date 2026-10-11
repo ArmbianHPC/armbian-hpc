@@ -13,3 +13,5 @@
 完整 IMG、OTA 载荷与压缩包生成在源码目录外；公开发行按 RELEASE.md 另行检查许可和对应源码。
 
 `prepare-oect-squashfs.py` 校验输入 BOOT 清单，生成新的原始 initramfs 和输出清单；随后运行 `compare-squashfs.py`，再将输出清单传给组装器。共享目录由组装器初始化，序号写入控制记录。
+
+固件 XZ 归档与上位机包格式校验见 [Firmware packaging](FIRMWARE-PACKAGING.md)。
