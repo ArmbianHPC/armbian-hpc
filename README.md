@@ -2,45 +2,54 @@
 
 [简体中文](README.zh-CN.md)
 
-ARMHPC **1.0.0** is a configurable Linux firmware framework for ARM64 and ARM32 devices, with normal-system and Rescue environments.
+ARMHPC **1.0.0** is a modular Linux firmware and device-management framework for ARM64 and ARM32 systems. It provides configurable normal-system and Rescue environments, reusable system components, and board-specific build profiles.
 
-## OECT support
+## Architecture
 
-The current OECT target is the original WXY OEC Turbo with 4 GB RAM and 8 GB eMMC.
+Each target combines a SoC, board, build backend, operating system, storage layout, and workload. Common device-management and recovery components are reused across targets; board profiles define the boot chain, drivers, interfaces, and partition requirements.
 
-| Storage | Contents |
+WXY OEC Turbo (OECT) is the first integrated device. Its current firmware uses SquashFS Rescue A/B, a shared writable area, and a separate ext4 normal system and DATA partition. These storage choices belong to that target's profile. Additional boards supply their own integration and compatible firmware packages through the same framework.
+
+## Features
+
+- Configurable firmware composition for ARM64 and ARM32, with explicit source and component selection.
+- Normal-system and independent Rescue environments, installation, recovery, and shared device identity.
+- Signed OTA integration, Rescue A/B, offline system deployment, and persistent recovery records.
+- Network and administrator initialisation, SSH access, clock recovery, and board-configured status and Ethernet LEDs.
+- USB OTG serial access on targets with a supported device-mode controller.
+- Optional workload components, including K3s installation and cluster configuration.
+
+| Command | Purpose |
 | --- | --- |
-| eMMC BOOT | 512 MiB ext4 with kernel, DTB, and raw initramfs |
-| eMMC Rescue A/B | Two 512 MiB SquashFS slots, each with its own writable layer |
-| eMMC shared area | Remaining space as ext4 for identity, boot control, recovery packages, and maintenance records |
-| SATA system | 64 GiB ext4 |
-| SATA DATA | Remaining SATA space as ext4 |
+| `armhpc` | Manage the normal system. |
+| `armhpc-rescue` | Manage Rescue, installation, and recovery. |
+| `armhpc-kube` | Manage the optional K3s workload. |
 
-Features include device identity and MAC initialisation, hostnames based on the MAC suffix, SSH, USB2 OTG serial console, status and Ethernet LEDs, SATA installation and recovery, clock recovery, and K3s configuration.
-
-Use `armhpc` in the normal system, `armhpc-rescue` in Rescue, and `armhpc-kube` for K3s operations. The shared OTA engine is maintained in [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota).
+The shared OTA engine and controller software are maintained in [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota).
 
 ## Configure a build
 
+List the available targets, then choose a target for the intended device:
+
 ```sh
 python3 scripts/image-framework.py list
-python3 scripts/image-framework.py validate wxy-oect-k3s
-python3 scripts/image-framework.py plan wxy-oect-k3s
-python3 scripts/image-framework.py stage wxy-oect-k3s
+python3 scripts/image-framework.py validate <target>
+python3 scripts/image-framework.py plan <target>
+python3 scripts/image-framework.py stage <target>
 ```
 
-Targets select a SoC, board, backend, operating system, storage layout, and workload. Other boards require their own integration. ARM32 uses the same configuration model with the corresponding architecture and helpers.
+Replace `<target>` with an ID from the list; `wxy-oect-k3s` is the first supplied board profile. Add new SoC, board, and target definitions using the [integration guide](docs/ADAPTERS.md). The configuration model supports both architectures; each board still needs matching boot files, drivers, and hardware verification.
 
 ## Downloads
 
-[Releases](https://github.com/ArmbianHPC/armbian-hpc/releases) use version-only titles such as `v1.0.0` and contain two firmware packages:
+[Releases](https://github.com/ArmbianHPC/armbian-hpc/releases) use version-only titles such as `v1.0.0`. Firmware packages identify the device model and software combination:
 
 ```text
 armhpc_<version>_<model>_<distribution>_<kernel>_<filesystem>_<build-date>.img.xz
 armhpc-ota_<version>_<model>_<distribution>_<kernel>_<filesystem>_<build-date>.tar.xz
 ```
 
-The first file is a compressed flashing image. The second contains signed system and Rescue payloads for the OTA controller. The build date is `YYYYMMDD` and reflects the actual compilation date. Firmware packages and private build inputs are kept outside this source repository.
+The first file is a compressed flashing image. The second contains signed normal-system and Rescue payloads for the OTA controller. The build date is `YYYYMMDD` and reflects the actual compilation date. Choose the package matching the device's target profile. Firmware packages and private build inputs are kept outside this source repository.
 
 ## Documentation
 

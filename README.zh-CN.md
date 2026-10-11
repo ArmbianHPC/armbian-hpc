@@ -2,45 +2,54 @@
 
 [English](README.md)
 
-ARMHPC **1.0.0** 是面向 ARM64／ARM32 设备的 Linux 固件配置与构建框架，提供普通系统和 Rescue 环境。
+ARMHPC **1.0.0** 是面向 ARM64／ARM32 系统的模块化 Linux 固件与设备管理框架，提供可配置的普通系统、Rescue 环境、通用系统组件及板卡构建方案。
 
-## OECT 适配
+## 架构
 
-当前 OECT 目标为原装 WXY OEC Turbo，配置为 4 GB 内存和 8 GB eMMC。
+每个目标组合 SoC、板卡、构建后端、操作系统、存储布局及工作负载。设备管理和恢复等通用组件跨目标复用，板卡配置定义引导链、驱动、接口和分区要求。
 
-| 存储 | 内容 |
+WXY OEC Turbo（OECT）是首个接入设备，当前固件使用 SquashFS Rescue A/B、共享可写区及独立的 ext4 普通系统和 DATA 分区。这些存储选择属于该目标的配置；新增板卡通过同一框架提供各自的接入方案及兼容固件包。
+
+## 功能
+
+- 面向 ARM64／ARM32 的固件组合配置，明确选择源码和组件。
+- 普通系统与独立 Rescue 环境，安装、恢复及共享设备身份。
+- 签名 OTA 接入、Rescue A/B、系统离线部署和持久恢复记录。
+- 网络与管理员初始化、SSH、时间恢复，以及按板卡配置的状态灯和网口灯。
+- 在支持 USB 设备模式的目标上提供 OTG 虚拟串口。
+- 可选应用组件，包括 K3s 安装及集群配置。
+
+| 命令 | 用途 |
 | --- | --- |
-| eMMC BOOT | 512 MiB ext4，包含内核、DTB 和 raw initramfs |
-| eMMC Rescue A/B | 各 512 MiB SquashFS，每槽具有独立可写层 |
-| eMMC 共享区 | 剩余 ext4，用于身份、启动控制、恢复包和维护记录 |
-| SATA 系统 | 64 GiB ext4 |
-| SATA DATA | SATA 剩余空间，ext4 |
+| `armhpc` | 管理普通系统。 |
+| `armhpc-rescue` | 管理 Rescue、安装和恢复。 |
+| `armhpc-kube` | 管理可选的 K3s 应用。 |
 
-功能包括设备身份和 MAC 初始化、按 MAC 后四位命名、SSH、USB2 OTG 虚拟串口、状态灯及网口灯、SATA 安装与恢复、时间恢复和 K3s 配置。
-
-普通系统使用 `armhpc`，Rescue 使用 `armhpc-rescue`，K3s 使用 `armhpc-kube`。共享升级核心位于 [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota)。
+共享 OTA 引擎和上位机软件位于 [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota)。
 
 ## 配置构建
 
+先列出已有目标，再选择设备对应的方案：
+
 ```sh
 python3 scripts/image-framework.py list
-python3 scripts/image-framework.py validate wxy-oect-k3s
-python3 scripts/image-framework.py plan wxy-oect-k3s
-python3 scripts/image-framework.py stage wxy-oect-k3s
+python3 scripts/image-framework.py validate <target>
+python3 scripts/image-framework.py plan <target>
+python3 scripts/image-framework.py stage <target>
 ```
 
-目标配置选择 SoC、板卡、后端、操作系统、存储布局及工作负载。其他板卡需要独立接入；ARM32 使用相同配置模型和对应架构、辅助程序。
+将 `<target>` 替换为列表中的目标 ID；`wxy-oect-k3s` 是首个提供的板卡方案。新增 SoC、板卡和目标配置参见[接入指南](docs/ADAPTERS.md)。配置模型支持两种架构，每个板卡仍需对应的启动文件、驱动及实机验证。
 
 ## 下载
 
-[Release](https://github.com/ArmbianHPC/armbian-hpc/releases) 标题只使用版本号，例如 `v1.0.0`，固件附件统一为两项：
+[Releases](https://github.com/ArmbianHPC/armbian-hpc/releases) 标题只使用版本号，例如 `v1.0.0`。固件包通过文件名标明设备型号和软件组合：
 
 ```text
 armhpc_<版本>_<设备型号>_<系统代号>_<内核版本>_<文件系统>_<编译日期>.img.xz
 armhpc-ota_<版本>_<设备型号>_<系统代号>_<内核版本>_<文件系统>_<编译日期>.tar.xz
 ```
 
-第一项为刷机镜像，第二项为包含普通系统和 Rescue 签名载荷的 OTA 包。编译日期使用实际日期，格式为 `YYYYMMDD`。固件包和私有构建输入保存在源码仓库外。
+第一项为刷机镜像，第二项为包含普通系统和 Rescue 签名载荷的 OTA 包。编译日期使用实际日期，格式为 `YYYYMMDD`。请选择与设备目标配置匹配的包。固件包和私有构建输入保存在源码仓库外。
 
 ## 文档
 
