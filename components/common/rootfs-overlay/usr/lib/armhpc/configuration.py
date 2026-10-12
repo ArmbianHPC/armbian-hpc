@@ -7,6 +7,22 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
+
+
+def network_login_confirmation():
+    if Path('/etc/armhpc/rescue-environment').is_file():
+        return False
+    if os.geteuid() == 0:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from network_config import Network, login_prompt
+        return login_prompt(Network()) == 10
+    result = subprocess.run(['sudo', '-n', '--', '/usr/bin/python3',
+                             str(Path(__file__).with_name('network_config.py')), '_login'],
+                            stderr=subprocess.PIPE, text=True, timeout=610)
+    if result.returncode not in (0, 10):
+        print('网络确认提示需要管理员权限；如有待确认配置，请运行 sudo armhpc network confirm。', file=sys.stderr)
+    return result.returncode == 10
 
 
 def main():
@@ -14,8 +30,10 @@ def main():
     parser.add_argument('--auto', action='store_true', help='首次交互式 SSH 登录触发。')
     parser.add_argument('--preview', action='store_true', help='只预览配置。')
     parser.add_argument('--policy', type=Path, help='预览时使用指定策略文件。')
-    parser.parse_args()
+    args = parser.parse_args()
     if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return
+    if args.auto and network_login_confirmation():
         return
     node = json.loads(Path('/etc/image-framework/node.json').read_text())
     if node['workload_component'] == 'none':
@@ -30,6 +48,6 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         print(f'节点配置入口不可用：{exc}', file=sys.stderr)
         sys.exit(1)

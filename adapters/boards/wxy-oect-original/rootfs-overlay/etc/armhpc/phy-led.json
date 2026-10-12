@@ -1,7 +1,11 @@
 {
   "interface": "eth0",
   "phy_id": "0x001cc916",
-  "link_indexes": [0, 1],
+  "link_indexes": [
+    0,
+    1
+  ],
   "activity_index": 2,
-  "mapping_basis": "RTL8211F defaults separate 10/100/1000 LEDs; the user's yellow LED is active at 1000 Mbps. LED2 is the activity candidate; LED0/1 both indicate link. Physical colour mapping remains to be tested."
+  "mapping_basis": "PHY LED classes: LED0 white, LED1 green (link), LED2 yellow (activity).",
+  "identify_index": 1
 }

@@ -8,6 +8,9 @@ import sys
 LIBRARY=Path(__file__).resolve().parent
 RESCUE_MARKER=Path('/etc/armhpc/rescue-environment')
 NORMAL={
+    'hostname':('hostname_config.py','查看、修改普通系统主机名，或打开主机名向导。'),
+    'network':('network_config.py','查看网络，配置 DHCP、静态 IPv4、网关和 DNS；超时未确认自动回滚。'),
+    'identify':('net_identify.py','规律闪烁网口绿灯以定位设备，结束或停止后恢复原灯态。'),
     'watchdog':('watchdog.py','查询看门狗状态和诊断报告。'),
     'usb-console':('usb_console.py','查看、启停 OTG 虚拟串口，读取当前或上次 Linux 启动日志。'),
     'ota':('ota.py','查询、预览和执行双系统签名 OTA；普通系统更新先进入 Rescue。'),
@@ -21,6 +24,7 @@ KUBE={
     'check':('kube_check.py','检查 K3s 数据挂载、绑定目录和安装状态。'),
 }
 RESCUE={
+    'identify':('net_identify.py','规律闪烁网口绿灯以定位设备，结束或停止后恢复原灯态。'),
     'watchdog':('watchdog.py','准备、执行和报告受控复位诊断；并发仅 1。'),
     'usb-console':('usb_console.py','查看、启停 OTG 虚拟串口，读取当前或上次 Linux 启动日志。'),
     'ota':('ota.py','在 Rescue 内管理系统更新、备用救援槽与失败恢复。'),

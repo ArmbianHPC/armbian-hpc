@@ -69,6 +69,27 @@ class DispatchTests(unittest.TestCase):
             self.assertEqual(error.exception.code,0)
         self.assertIs(sys.argv,argv);self.assertIn('armhpc led',out.getvalue())
 
+    def test_identification_arguments_route_in_both_environments(self):
+        argv=sys.argv
+        for rescue,fn,program in ((False,cli.normal_main,'armhpc'),(True,cli.rescue_main,'armhpc-rescue')):
+            def run(path,run_name,init_globals):
+                self.assertEqual(Path(path),COMMON/'net_identify.py')
+                self.assertEqual(sys.argv,[program+' identify','--interface','eth0','--seconds','30','--json'])
+                self.assertEqual(init_globals,{'ARMHPC_PROG':program+' identify'})
+            with mock.patch.object(cli,'RESCUE_MARKER',mock.Mock(is_file=lambda:rescue)),mock.patch.object(cli.runpy,'run_path',side_effect=run):
+                fn(['identify','--interface','eth0','--seconds','30','--json'])
+            self.assertIs(sys.argv,argv)
+
+    def test_host_settings_route_exact_arguments_only_in_normal_system(self):
+        for command,module,args in (
+                ('hostname','hostname_config.py',['set','compute-07','--yes','--json']),
+                ('network','network_config.py',['set','--interface','eth0','--dhcp','--plan','--json'])):
+            with mock.patch.object(cli,'RESCUE_MARKER',mock.Mock(is_file=lambda:False)),mock.patch.object(cli.runpy,'run_path') as run:
+                cli.normal_main([command,*args])
+            self.assertEqual(Path(run.call_args.args[0]),COMMON/module)
+            self.assertEqual(run.call_args.kwargs['init_globals'],{'ARMHPC_PROG':'armhpc '+command})
+            self.assertNotIn(command,cli.RESCUE)
+
 class LayoutTests(unittest.TestCase):
     def root(self):
         parent=ROOT/'build/tests';parent.mkdir(parents=True,exist_ok=True)

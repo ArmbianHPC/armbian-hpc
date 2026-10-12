@@ -6,11 +6,14 @@
 
 | 子命令 | 用途 |
 | --- | --- |
+| `armhpc hostname` | 查看、修改普通系统主机名，或打开主机名向导。 |
+| `armhpc network` | 配置 DHCP、静态 IPv4、网关及 DNS，限时未确认自动回滚。 |
 | `armhpc watchdog` | 查询看门狗状态和诊断报告。 |
 | `armhpc usb-console` | 查看、启停 OTG 虚拟串口，读取当前或上次 Linux 启动日志。 |
 | `armhpc ota` | 查询、预览和执行双系统签名 OTA；普通系统更新先进入 Rescue。 |
 | `armhpc configuration` | 打开正常系统的应用配置向导。 |
 | `armhpc firstrun` | 为离线 ext4 根文件系统创建管理员并导入 SSH 公钥。 |
+| `armhpc identify` | 规律闪烁网口绿灯，默认 30 秒，支持停止和查询。 |
 | `armhpc led` | 查看 RGB 灯态、设置蓝色心跳或清除错误提示。 |
 | `armhpc rescue` | 请求下一次进入 Rescue；--reboot 立即重启，--cancel 取消。 |
 
@@ -27,6 +30,7 @@
 | `armhpc-rescue restore` | 恢复 SATA 系统分区，保留 DATA 和选定机器身份。 |
 | `armhpc-rescue provision` | 从本地交互终端配置 Rescue 管理员和 SSH 公钥。 |
 | `armhpc-rescue firstrun` | 为离线 ext4 根文件系统配置管理员和 SSH 公钥。 |
+| `armhpc-rescue identify` | 规律闪烁网口绿灯，结束后恢复原来的硬件灯态。 |
 | `armhpc-rescue led` | 查看或管理 Rescue RGB 灯态及蓝色心跳。 |
 | `armhpc-rescue boot` | 请求下一次仍进入 Rescue，或取消待执行请求。 |
 | `armhpc-rescue reboot` | 正常重启；有有效 SATA 系统时自动进入正常系统。 |
@@ -40,3 +44,9 @@
 | `armhpc-kube check` | 检查 K3s 数据挂载、绑定目录和安装状态。 |
 
 OTA 的 `status`、`doctor`、`plan`、`tools status/update`、`apply`、`recover` 和 `logs` 使用同一签名升级引擎。`--json` 保持 protocol 1；写盘需明确确认。
+
+网口定位示例和参数见 [网口绿灯定位](NETWORK-IDENTIFY.zh-CN.md)。
+
+三个入口均支持 Bash Tab 补全，详见 [命令补全](COMPLETION.zh-CN.md)。
+
+主机名和网络设置、确认回滚及升级保存范围见 [主机配置](HOST-SETTINGS.zh-CN.md)。

@@ -230,6 +230,8 @@ def register_factory_system(root, device):
     if config.board().get('rescue_fstype') != 'squashfs': return
     engine = Engine(config); storage = layout(config, discover(config), initialized=True)
     require(storage['partitions']['system']['path'] == str(Path(device).resolve()), 'New SATA root differs from its adapter.')
+    from armhpc_ota.maintenance import retain_installed_runtime
+    retain_installed_runtime(config, root)
     engine.backend.configure_shared_mount(root, storage, 'system')
     engine.backend.restore_shared_identity(root, 'system')
     engine.backend.save_shared_identity(root, 'system')
@@ -247,6 +249,10 @@ def register_factory_system(root, device):
 def retained_identity(device):
     result = {}
     with mounted(device, read_only=True) as root:
+        transaction = root / 'var/lib/armhpc/network-config/transaction.json'
+        if transaction.exists():
+            require(not transaction.is_symlink() and json.loads(transaction.read_text()).get('stage') in ('confirmed', 'rolled-back', 'failed'),
+                    'Confirm or roll back the pending network configuration before factory restoration.')
         candidates = [root / 'etc/machine-id', root / 'etc/hostname', root / 'etc/hosts', *(root / 'etc/ssh').glob('ssh_host_*_key*')]
         for path in candidates:
             require(not path.is_symlink(), 'Identity file cannot be a symbolic link.')

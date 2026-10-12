@@ -77,15 +77,33 @@ def normal_hostname(mac):
     return 'armhpc-' + mac.replace(':', '')[-4:].lower()
 
 
-def configure_hostname(mac):
-    rescue = Path('/etc/armhpc/rescue-environment').is_file()
-    hostname = rescue_hostname(mac) if rescue else normal_hostname(mac)
-    atomic_write('/etc/hostname', hostname+'\n')
-    hosts = Path('/etc/hosts').read_text().splitlines()
-    hosts = [line for line in hosts if not re.match(r'^\s*127\.0\.1\.1\s', line)]
-    atomic_write('/etc/hosts', '\n'.join(hosts)+'\n127.0.1.1 '+hostname+'\n')
-    socket.sethostname(hostname.encode())
+def configure_hostname(mac, root=Path('/'), runtime=True):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from hostname_config import boot_hostname, update_hosts
+    from config_io import safe_path
+    root = Path(root)
+    rescue = (root / 'etc/armhpc/rescue-environment').is_file()
+    path = safe_path(root, 'etc/hostname')
+    current = path.read_text().strip() if path.is_file() else ''
+    generated = rescue_hostname(mac) if rescue else normal_hostname(mac)
+    hostname = boot_hostname(current, generated, rescue)
+    hosts_path = safe_path(root, 'etc/hosts')
+    hosts = hosts_path.read_text() if hosts_path.is_file() else '127.0.0.1 localhost\n'
+    atomic_write(hosts_path, update_hosts(hosts, hostname))
+    atomic_write(path, hostname + '\n')
+    if runtime:
+        socket.sethostname(hostname.encode('ascii'))
     return hostname
+
+
+def recover_network_settings():
+    if Path('/etc/armhpc/rescue-environment').is_file() or not Path('/var/lib/armhpc/network-config/transaction.json').is_file():
+        return
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from network_config import Network
+    Network().recover_on_boot()
 
 
 def vendor_record(raw, mac_index=0):
@@ -342,8 +360,12 @@ def main():
     if os.geteuid() != 0:
         raise RuntimeError('First boot configuration requires root')
     try:
+        recover_network_settings()
+    except (OSError, ValueError, RuntimeError) as error:
+        print('ARMHPC network configuration recovery failed: ' + str(error), flush=True)
+    try:
         configure_network()
-    except (OSError, ValueError, subprocess.SubprocessError) as error:
+    except (OSError, ValueError, RuntimeError, ImportError, subprocess.SubprocessError) as error:
         # Keep the kernel's usable address when storage/interface discovery fails.
         # Authentication still initializes so an administrator can diagnose it.
         print('ARMHPC network identity initialization failed: ' + str(error), flush=True)
