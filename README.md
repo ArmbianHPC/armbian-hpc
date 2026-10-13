@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md)
 
-ARMHPC **1.0.0** is a modular Linux firmware and device-management framework for ARM64 and ARM32 systems. It provides configurable normal-system and Rescue environments, reusable system components, and board-specific build profiles.
+ARMHPC **1.1.0** is a modular Linux firmware and device-management framework for ARM64 and ARM32 systems. It provides configurable normal-system and Rescue environments, reusable system components, and board-specific build profiles.
 
 ## Architecture
 
@@ -15,9 +15,11 @@ WXY OEC Turbo (OECT) is the first integrated device. Its current firmware uses S
 - Configurable firmware composition for ARM64 and ARM32, with explicit source and component selection.
 - Normal-system and independent Rescue environments, installation, recovery, and shared device identity.
 - Signed OTA integration, Rescue A/B, offline system deployment, and persistent recovery records.
-- Network and administrator initialisation, SSH access, clock recovery, and board-configured status and Ethernet LEDs.
+- Network and administrator initialisation, SSH access and clock recovery.
+- Persistent normal-system hostnames and guided IPv4/DNS configuration with confirmation and timed rollback.
+- Board-configured status and Ethernet LEDs, green-port identification and Bash command completion.
 - USB OTG serial access on targets with a supported device-mode controller.
-- Optional workload components, including K3s installation and cluster configuration.
+- Optional workload components, including K3s installation, cluster configuration, node-local reset/reinstall and a pinned Rancher China download source.
 
 | Command | Purpose |
 | --- | --- |
@@ -53,12 +55,13 @@ The first file is a compressed flashing image. The second contains signed normal
 
 ## Documentation
 
+
 - [Building](docs/BUILD.md)
 - [Board and component integration](docs/ADAPTERS.md)
 - [Device commands](docs/COMMANDS.md)
 - [Sources and firmware inputs](docs/SOURCES.md)
 - [Release policy](docs/RELEASE.md)
-- [v1.0.0 release notes](docs/releases/v1.0.0.md) / [简体中文](docs/releases/v1.0.0.zh-CN.md)
+- [v1.1.0 release notes](docs/releases/v1.1.0.md) / [简体中文](docs/releases/v1.1.0.zh-CN.md)
 - [Known issues](docs/KNOWN-ISSUES.md)
 
 ## License

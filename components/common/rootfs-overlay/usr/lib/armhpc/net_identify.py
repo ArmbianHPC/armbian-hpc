@@ -51,6 +51,9 @@ def interface_name(requested=None):
         name = candidates[0]
     if not re.fullmatch(r'[A-Za-z0-9_.:-]{1,15}', name) or name in ('.', '..') or not (NET / name / 'device').is_dir():
         raise ValueError('Invalid or unavailable physical network interface')
+    supported = load_policy().get('supported_interfaces')
+    if supported is not None and name not in supported:
+        raise ValueError('This board supports identification only on: ' + ', '.join(supported))
     return name
 
 

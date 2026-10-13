@@ -22,6 +22,9 @@ NORMAL={
 KUBE={
     'configuration':('kube_setup.py','联网安装、创建或加入 K3s 集群，修复或重试配置。'),
     'check':('kube_check.py','检查 K3s 数据挂载、绑定目录和安装状态。'),
+    'uninstall':('kube_manage.py','归档此节点 K3s 数据并卸载，清除安装向导记录。'),
+    'reinstall':('kube_manage.py','归档并卸载 K3s，随后重新打开安装向导。'),
+    'clear':('kube_manage.py','清理未完成安装及半成品数据，拒绝清理已安装节点。'),
 }
 RESCUE={
     'identify':('net_identify.py','规律闪烁网口绿灯以定位设备，结束或停止后恢复原灯态。'),
@@ -41,7 +44,7 @@ RESCUE={
 }
 
 def dispatch(prog, commands, argv=None, *, rescue=False):
-    extra='\nK3s 管理：armhpc-kube configuration / armhpc-kube check\n' if prog=='armhpc' and (LIBRARY/'kube_setup.py').is_file() else ''
+    extra='\nK3s 管理：armhpc-kube configuration / check / uninstall / reinstall / clear\n' if prog=='armhpc' and (LIBRARY/'kube_setup.py').is_file() else ''
     parser=argparse.ArgumentParser(prog=prog,description='ARMHPC 系统管理。',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='子命令：\n'+''.join(f'  {name:16s} {item[1]}\n' for name,item in commands.items())+

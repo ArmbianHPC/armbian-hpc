@@ -4,6 +4,7 @@
 
 import argparse
 from datetime import datetime, timezone
+import errno
 import getpass
 import hashlib
 import ipaddress
@@ -14,12 +15,14 @@ import platform
 import re
 import shutil
 import socket
+import ssl
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.parse
 import urllib.request
+import urllib.error
 import uuid
 
 try:
@@ -28,6 +31,9 @@ except ImportError:
     fcntl = None
 
 POLICY_PATH = Path('/etc/image-framework/k3s.json')
+RANCHER_CN_INSTALLER = 'https://rancher-mirror.rancher.cn/k3s/k3s-install.sh'
+RANCHER_CN_ARTIFACTS = 'https://rancher-mirror.rancher.cn/k3s'
+RANCHER_CN_INSTALLER_SHA256 = '3944aa467eb945b5ff2151a8e4f8d4a5f3a210d31ab39aec81f37606936d0863'
 ROLES = {
     '1': ('server-single', '创建新集群：单控制节点（SQLite）'),
     '2': ('server-init', '创建新集群：初始化多控制节点方案（etcd）'),
@@ -135,6 +141,9 @@ def validate_download_source(source):
         raise SetupError('下载来源类型无效。')
     validate_download_url(source['installer_url'])
     validate_download_url(source['artifact_url'])
+    if source['installer_url'] == RANCHER_CN_INSTALLER:
+        if source['kind'] != 'mirror' or source['artifact_url'] != RANCHER_CN_ARTIFACTS:
+            raise SetupError('Rancher 国内安装脚本需要使用配套的国内程序下载来源。')
     if not isinstance(source['registry_mirrors'], dict):
         raise SetupError('容器仓库配置无效。')
     for registry, endpoints in source['registry_mirrors'].items():
@@ -150,11 +159,16 @@ def collect_download_source(policy, previous=None):
     print('\n选择 K3s 下载来源：')
     print('  1. 上游官方安装脚本与 Release 下载地址')
     print('  2. 自定义镜像站（分别填写脚本地址和 Release 前缀）')
-    choice = ask('下载来源', '2' if previous.get('kind') == 'mirror' else '1',
+    print('  3. Rancher 中文社区国内源')
+    default = '3' if previous.get('installer_url') == RANCHER_CN_INSTALLER else '2' if previous.get('kind') == 'mirror' else '1'
+    choice = ask('下载来源', default,
                  lambda value: validate_source_choice(value))
     source = {'kind': 'official' if choice == '1' else 'mirror', 'registry_mirrors': {}}
     if choice == '1':
         source.update(installer_url=policy['installer_url'], artifact_url=policy['artifact_url'])
+    elif choice == '3':
+        source.update(installer_url=RANCHER_CN_INSTALLER, artifact_url=RANCHER_CN_ARTIFACTS)
+        print('使用固定校验的国内安装脚本；K3s 版本与已有集群保持一致。')
     else:
         print('镜像站必须提供与固定 SHA256 一致的安装脚本，不能替换为修改过的脚本。')
         print('Release 前缀下需包含 <完整版本>/k3s-arm64 或 k3s-armhf 及对应 SHA256 文件。')
@@ -173,8 +187,22 @@ def collect_download_source(policy, previous=None):
 
 
 def validate_source_choice(value):
-    if value not in ('1', '2'):
-        raise ValueError('请输入 1 或 2。')
+    if value not in ('1', '2', '3'):
+        raise ValueError('请输入 1、2 或 3。')
+
+
+def installer_settings(policy, source):
+    validate_download_source(source)
+    return dict(policy, installer_url=source['installer_url'],
+                installer_sha256=RANCHER_CN_INSTALLER_SHA256 if source['installer_url'] == RANCHER_CN_INSTALLER else policy['installer_sha256'])
+
+
+def download_environment(source):
+    validate_download_source(source)
+    values = {'INSTALL_K3S_ARTIFACT_URL': source['artifact_url']}
+    if source['installer_url'] == RANCHER_CN_INSTALLER:
+        values.update(INSTALL_K3S_MIRROR='cn', INSTALL_K3S_MIRROR_URL='https://rancher-mirror.rancher.cn')
+    return values
 
 
 def validate_registry_list(value):
@@ -240,16 +268,18 @@ def save_state(policy, state):
     private_write(policy['state_file'], json.dumps(state, ensure_ascii=False, indent=2) + '\n')
 
 
-def collect_plan(policy):
+def collect_plan(policy, previous=None):
+    previous = previous or {}
     print(f'\n{policy["display_name"]} / K3s 配置引导\n')
     for choice, (_, description) in ROLES.items():
         print(f'  {choice}. {description}')
     print('  0. 暂不配置，进入普通终端')
-    choice = ask('选择节点用途', '0', lambda value: validate_choice(value))
+    default_role = next((key for key, value in ROLES.items() if value[0] == previous.get('role')), '0')
+    choice = ask('选择节点用途', default_role, lambda value: validate_choice(value))
     if choice == '0':
         return None, None
     role = ROLES[choice][0]
-    default_name = socket.gethostname().lower()
+    default_name = previous.get('node_name', socket.gethostname().lower())
     try:
         validate_name(default_name)
     except ValueError:
@@ -257,21 +287,21 @@ def collect_plan(policy):
     plan = {
         'role': role,
         'node_name': ask('唯一节点名称', default_name, validate_name),
-        'version': ask('K3s 完整版本（入群时与控制节点一致）', policy['default_version'], validate_version),
+        'version': ask('K3s 完整版本（入群时与控制节点一致）', previous.get('version', policy['default_version']), validate_version),
         'server': '',
         'server_options': {},
     }
     token = None
     if role in ('agent', 'server-join'):
-        plan['server'] = ask('集群入口，例如 https://192.168.1.10:6443', validator=validate_server)
+        plan['server'] = ask('集群入口，例如 https://192.168.1.10:6443', previous.get('server') or None, validate_server)
         token = read_token()
     if role != 'agent':
         if role == 'server-join':
             print('控制节点的集群参数必须与已有集群一致。')
         else:
             print('集群网络不能与局域网或其他集群网络重叠。')
-        plan['server_options'] = collect_server_options()
-    plan['download_source'] = collect_download_source(policy)
+        plan['server_options'] = collect_server_options(previous.get('server_options'))
+    plan['download_source'] = collect_download_source(policy, previous.get('download_source'))
     return plan, token
 
 
@@ -386,19 +416,47 @@ def prepare_storage(policy, plan):
 
 
 def download_installer(policy, destination):
-    digest = hashlib.sha256()
-    request = urllib.request.Request(policy['installer_url'], headers={'User-Agent': 'Image-Framework-Setup/1'})
-    with urllib.request.urlopen(request, timeout=60) as response, Path(destination).open('wb') as output:
-        validate_download_url(response.geturl())
-        total = 0
-        while block := response.read(65536):
-            total += len(block)
-            if total > 1024 * 1024:
-                raise SetupError('安装脚本超过预期大小。')
-            digest.update(block)
-            output.write(block)
-    if digest.hexdigest() != policy['installer_sha256']:
-        raise SetupError('在线安装脚本的 SHA256 与固定版本不一致。')
+    destination = Path(destination)
+    for attempt in range(1, 4):
+        temporary = None
+        try:
+            digest = hashlib.sha256()
+            request = urllib.request.Request(policy['installer_url'], headers={'User-Agent': 'Image-Framework-Setup/1'})
+            print(f'下载安装脚本（{attempt}/3）：{policy["installer_url"]}', flush=True)
+            with urllib.request.urlopen(request, timeout=60) as response:
+                validate_download_url(response.geturl())
+                with tempfile.NamedTemporaryFile(prefix='.install-', dir=destination.parent, delete=False) as output:
+                    temporary = Path(output.name)
+                    total = 0
+                    while block := response.read(65536):
+                        total += len(block)
+                        if total > 1024 * 1024:
+                            raise SetupError('安装脚本超过预期大小。')
+                        digest.update(block)
+                        output.write(block)
+                    output.flush()
+                    os.fsync(output.fileno())
+            if digest.hexdigest() != policy['installer_sha256']:
+                raise SetupError('在线安装脚本的 SHA256 与固定版本不一致；未执行脚本。')
+            os.replace(temporary, destination)
+            temporary = None
+            print(f'安装脚本已校验：{total} 字节。', flush=True)
+            return
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as error:
+            reason = getattr(error, 'reason', error)
+            retryable = (isinstance(error, (urllib.error.URLError, TimeoutError, ConnectionError)) or
+                         getattr(error, 'errno', None) in (errno.ENETUNREACH, errno.EHOSTUNREACH, errno.ETIMEDOUT))
+            retryable = retryable and not isinstance(reason, ssl.SSLCertVerificationError)
+            if isinstance(error, urllib.error.HTTPError):
+                retryable = error.code in (408, 429, 500, 502, 503, 504)
+            if not retryable or attempt == 3:
+                raise SetupError(f'安装脚本下载失败：{policy["installer_url"]}；{error}。已保留节点配置，可重试或修改下载来源。') from error
+            delay = (1, 3)[attempt - 1]
+            print(f'网络下载未完成：{error}；{delay} 秒后重试。', flush=True)
+            time.sleep(delay)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
 
 
 def wait_for_service(policy, service):
@@ -435,13 +493,13 @@ def install(policy, state, token):
         'INSTALL_K3S_VERSION': plan['version'],
         'INSTALL_K3S_EXEC': 'agent' if plan['role'] == 'agent' else 'server',
         'INSTALL_K3S_SKIP_START': 'true',
-        'INSTALL_K3S_ARTIFACT_URL': source['artifact_url'],
         'K3S_CONFIG_FILE': policy['configuration_dir'] + '/config.yaml',
         'ARCH': policy['installer_arch'],
     })
+    environment.update(download_environment(source))
     with tempfile.TemporaryDirectory(prefix='armhpc-k3s-configuration-', dir='/run') as directory:
         installer = Path(directory) / 'install.sh'
-        download_installer(dict(policy, installer_url=source['installer_url']), installer)
+        download_installer(installer_settings(policy, source), installer)
         run(['sh', str(installer)], env=environment, timeout=900)
     state['status'] = 'starting'
     save_state(policy, state)
@@ -472,6 +530,10 @@ def main():
     if args.policy != POLICY_PATH and not args.preview:
         raise SetupError('自定义策略路径仅用于预览。')
     policy = json.loads(args.policy.read_text())
+    if not args.preview:
+        management = Path(policy["backups_dir"]) / "k3s-management.json"
+        if management.is_file() and json.loads(management.read_text()).get("stage") == "incomplete":
+            raise SetupError("K3s 管理尚未完成；请继续原 uninstall、reinstall 或 clear 操作后再安装。")
     if not args.preview and os.geteuid() != 0:
         os.execvp('sudo', ['sudo', '--', '/usr/local/sbin/armhpc-kube', 'configuration', *sys.argv[1:]])
     if args.auto and Path(policy['completion_marker']).exists() and os.access('/usr/local/bin/k3s', os.X_OK):
@@ -501,7 +563,7 @@ def main():
             plan = json.loads(json.dumps(plan))
             data_dir = Path(policy['data_dir'])
             if not data_dir.exists() or not any(data_dir.iterdir()):
-                plan, token = collect_plan(policy)
+                plan, token = collect_plan(policy, plan)
                 if plan is None:
                     return
             else:

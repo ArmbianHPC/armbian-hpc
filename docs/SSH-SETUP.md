@@ -1,9 +1,13 @@
-# K3s 配置
+# K3s configuration
 
-普通系统使用 `armhpc-kube configuration` 创建 SQLite 控制节点、初始化 etcd 控制节点、加入工作节点或加入控制节点。输入来源、固定 K3s 版本和相应集群参数，配置存放于设备本地受保护位置。
+Run `armhpc-kube configuration` in the normal system to create a SQLite server, initialise an embedded-etcd cluster, or join an existing cluster as an agent or server. `armhpc configuration` opens the same workload wizard. Node names, versions, cluster settings and credentials are stored locally.
 
-`armhpc-kube check` 检查 DATA 挂载、节点身份、安装状态及持久目录。下载中断可以继续配置；数据挂载缺失时服务拒绝启动。SCP、SFTP 和非交互 SSH 命令不会进入交互向导。
+The download menu offers upstream releases, a custom HTTPS mirror, and the Rancher Chinese community mirror. The China option selects the matching installer and binary origin, verifies the installer against a separate pinned SHA256, and enables its native download path rules. Keep the K3s version in its original form, such as `v1.36.5+k3s1`; the mirror's download directory uses a hyphen internally.
 
-安装脚本和软件来源校验 SHA256 与 HTTPS。管理员可以指定自己的 K3s 软件来源及容器镜像配置。集群令牌、凭据和 K3s 上游二进制不进入本仓库或 OTA 更新包；OTA 恢复已安装的同版本 K3s。
+Installer network failures are retried at most three times. Certificate errors, invalid checksums, oversized scripts and permanent HTTP errors are rejected. Only a verified installer is committed and executed. If the mirror changes its installer, update the reviewed pin through a new software revision.
 
-正常系统失败时从 Rescue 恢复系统分区，DATA 上的持久数据保持。集群的节点维护由管理员执行。
+Container registry mirrors are a separate setting. Configure them on each node that needs them. The wizard accepts HTTPS registry endpoints and keeps existing node and cluster settings when a saved plan is retried.
+
+Run `armhpc-kube check` to check DATA mounts, node identity, installation state and persistent directories. An interrupted download can be retried using the saved plan. To change its source, choose **2: correct settings or download source**, then **3: Rancher Chinese community mirror**. Each subsequent server must use the same critical cluster settings as the first server, including Secret encryption.
+
+The installer and software downloads use HTTPS and SHA256 verification. Cluster tokens, credentials and upstream K3s binaries are excluded from this repository and OTA system packages. OTA restores an installed K3s binary at the recorded version. Restoring the normal system from Rescue preserves DATA; cluster maintenance is managed by the administrator.

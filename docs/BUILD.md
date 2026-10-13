@@ -14,4 +14,12 @@
 
 `prepare-oect-squashfs.py` 校验输入 BOOT 清单，生成新的原始 initramfs 和输出清单；随后运行 `compare-squashfs.py`，再将输出清单传给组装器。共享目录由组装器初始化，序号写入控制记录。
 
+压缩比较必须通过 `--ota-source` 指定匹配的 OTA 源码检出，不依赖构建机已安装的 Python 包。源码路径无效时，在创建压缩输出前拒绝执行。
+
+```sh
+python3 tools/build/compare-squashfs.py \
+  --root /work/public/rescue --ota-source /src/armhpc-ota \
+  --output /work/compression --epoch "$SOURCE_DATE_EPOCH"
+```
+
 固件 XZ 归档与上位机包格式校验见 [Firmware packaging](FIRMWARE-PACKAGING.md)。

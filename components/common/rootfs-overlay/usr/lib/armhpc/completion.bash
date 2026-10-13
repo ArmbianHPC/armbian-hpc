@@ -26,7 +26,7 @@ _armhpc_completion_value_option()
     case $1 in
         --interface|--seconds|--period-ms|--heartbeat|--error|--rootfs|--username|--public-key-file|--policy|--disk|\
         --release|--manifest|--target|--anchor-manifest|--request-id|--job|--interval|--url|--tools-source|--ca|--origin|\
-        --bundle|--phase|--exported-backup-sha256|--kind|--sata|--test-id|--address|--gateway|--dns|--rollback-after|--transaction) return 0 ;;
+        --bundle|--phase|--exported-backup-sha256|--kind|--sata|--test-id|--address|--gateway|--dns|--rollback-after|--k3s-version|--transaction) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -45,6 +45,7 @@ _armhpc_complete_value()
         --period-ms) _armhpc_complete_words 500 1000 2000 ;;
         --interval) _armhpc_complete_words 2 5 10 ;;
         --rollback-after) _armhpc_complete_words 90 120 300 ;;
+        --k3s-version) _armhpc_complete_words v1.37.1+k3s1 ;;
         --rootfs) _armhpc_complete_path d ;;
         --manifest|--anchor-manifest|--bundle|--ca|--public-key-file|--policy|--disk) _armhpc_complete_path ;;
         --interface)
@@ -125,7 +126,7 @@ _armhpc_complete()
             case $program in
                 armhpc) _armhpc_complete_words hostname network identify watchdog usb-console ota configuration firstrun led rescue ;;
                 armhpc-rescue) _armhpc_complete_words identify watchdog usb-console ota configuration status install restore provision firstrun led boot reboot console ;;
-                armhpc-kube) _armhpc_complete_words configuration check ;;
+                armhpc-kube) _armhpc_complete_words configuration check uninstall reinstall clear ;;
             esac
         fi
     else
@@ -150,6 +151,9 @@ _armhpc_complete()
             firstrun) options+=(--rootfs --username --public-key-file) ;;
             install|restore) options+=(--disk --username --public-key-file --execute) ;;
             provision) options+=(--username --public-key-file) ;;
+            uninstall|reinstall|clear)
+                [[ $program != armhpc-kube ]] || options+=(--preview --yes --json --k3s-version)
+                ;;
             configuration)
                 options+=(--auto)
                 [[ $program != armhpc-rescue ]] && options+=(--preview --policy)
