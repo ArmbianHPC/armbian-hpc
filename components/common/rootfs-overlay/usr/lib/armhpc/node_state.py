@@ -37,6 +37,9 @@ def data_mount(root=Path('/'), expected=None):
     value = rows[0]
     require(value['target'] == str(target) and value['fstype'] == 'ext4' and value.get('uuid')
             and 'rw' in value['options'].split(','), 'data_mount', 'DATA must be a writable, UUID-identified ext4 mount')
+    local=read_json(safe_path(root,'etc/armhpc/data-identity.json'),{})
+    if local:
+        require(value['uuid']==local.get('uuid'),'data_identity','DATA UUID differs from this system\'s retained identity')
     if expected:
         require(value['uuid'] == expected['uuid'], 'data_identity', 'DATA UUID differs from the registered device')
     disk = json.loads(run('lsblk', '-J', '-s', '-o', 'PATH,TYPE,SERIAL,WWN,TRAN', value['source']))
@@ -51,13 +54,28 @@ def data_mount(root=Path('/'), expected=None):
     if expected:
         require(all(not expected.get(k) or expected[k] == v for k, v in identity.items()),
                 'data_identity', 'DATA disk identity changed')
+    if local:
+        require(all(not local.get(k) or local[k]==v for k,v in identity.items()),
+                'data_identity','DATA disk identity differs from the retained system record')
     return target, {'uuid': value['uuid'], **identity}
+
+
+def bind_identity(root,identity):
+    path=safe_path(root,'etc/armhpc/data-identity.json')
+    previous=read_json(path,{})
+    require(not previous or previous==identity,'data_identity','Changing DATA needs explicit disk installation/recovery')
+    if not previous:save_json(path,identity)
 
 
 def kernel_status(root=Path('/'), release=None):
     root = Path(root)
     release = release or os.uname().release
     policy = read_json(root / 'etc/image-framework/kernel-requirements.json', {})
+    baseline=read_json(root/'usr/lib/armhpc/kernel-baseline.json',{})
+    if baseline:
+        require(baseline.get('schema_version')==1 and isinstance(baseline.get('requirements'),dict),
+                'kernel_baseline','Unsupported shared kernel baseline')
+        policy={**policy,**baseline['requirements']}
     compressed = root / 'proc/config.gz'
     candidates = (root / 'boot' / ('config-' + release), root / 'usr/lib/modules' / release / 'config')
     text = gzip.decompress(compressed.read_bytes()).decode() if compressed.is_file() else next(
@@ -126,7 +144,7 @@ def register(root, manifest, apply=True):
             'service_manifest', 'The service unit must be included')
     dependency='etc/systemd/system/'+manifest['unit']+'.d/10-armhpc-state.conf'
     dependency_path=resource_path(root,dependency)
-    dependency_text='# Managed by armhpc state\n[Unit]\nRequires=armhpc-runtime.service\nAfter=armhpc-runtime.service\nRequiresMountsFor=/data\n'
+    dependency_text='# Managed by armhpc state\n[Unit]\nRequires=armhpc-runtime.service armhpc-swap.service\nAfter=armhpc-runtime.service armhpc-swap.service\nRequiresMountsFor=/data\n'
     require(not dependency_path.exists() or dependency_path.read_text()==dependency_text,
             'service_conflict','An unrelated dependency drop-in already exists')
     files, contents = [], {}
@@ -152,17 +170,17 @@ def register(root, manifest, apply=True):
                 'service_permissions', 'Registered resources must be root-owned and not writable by other users')
             require(not os.listxattr(source), 'resource_attributes',
                     'Import resources with capabilities or extended attributes through a package-specific adapter')
-            content, mode = source.read_bytes(), source.stat().st_mode & 0o777
-        checksum = hashlib.sha256(content).hexdigest()
-        contents[checksum] = content
+            mode = source.stat().st_mode & 0o777
+        checksum = hashlib.sha256(content).hexdigest() if relative==dependency else digest(source)
+        contents[checksum] = content if relative==dependency else source
         files.append({'path': relative, 'sha256': checksum, 'mode': mode})
-    require(shutil.disk_usage(data).free >= sum(map(len, contents.values())) + 64 * 1024**2,
+    require(shutil.disk_usage(data).free >= sum(len(value) if isinstance(value,bytes) else value.stat().st_size for value in contents.values()) + 64 * 1024**2,
             'state_space', 'Insufficient DATA space for a recoverable resource copy')
     if not apply:return {'unit':manifest['unit'],'enabled':manifest['enabled'],'files':files,'applied':False}
     for checksum, content in contents.items():
         cache = safe_path(data, RESOURCES + '/' + checksum)
         if not cache.exists():
-            atomic_write(cache, content, 0o600)
+            atomic_write(cache, content if isinstance(content,bytes) else content.read_bytes(), 0o600)
         require(digest(cache) == checksum, 'resource_hash', 'Recovery resource checksum differs')
     atomic_write(dependency_path,dependency_text)
     old = path.read_bytes() if path.exists() else None
@@ -172,6 +190,7 @@ def register(root, manifest, apply=True):
         'enabled': manifest['enabled'], 'files': files,
         'version': manifest.get('version'), 'source': manifest.get('source', 'administrator-registered')}
     save_json(path, state)
+    bind_identity(root,state['data'])
     return state
 
 
@@ -237,7 +256,8 @@ def status(root=Path('/')):
         changes, errors = inventory(root, data, state)
         services = {}
         if Path(root) == Path('/') and state['services']:
-            result = subprocess.run(['systemctl', 'show', *state['services'], '-p', 'Id', '-p', 'LoadState', '-p', 'ActiveState', '-p', 'Result'],
+            result = subprocess.run(['systemctl', 'show', *state['services'], '-p', 'Id', '-p', 'LoadState', '-p', 'ActiveState', '-p', 'Result',
+                                     '-p','Type','-p','ExecMainStatus','-p','ExecMainStartTimestampMonotonic'],
                                     text=True, capture_output=True, timeout=3)
             for block in result.stdout.strip().split('\n\n'):
                 fields=dict(line.split('=',1) for line in block.splitlines() if '=' in line)
@@ -255,6 +275,8 @@ def reconcile(root=Path('/'), apply=False):
     changes, errors = inventory(root, data, state)
     require(not errors, 'state_repair_required', json.dumps(errors, ensure_ascii=False))
     if apply:
+        bind_identity(root,state['data'])
+        if not path.exists():save_json(path,state)
         for item in changes:
             if item.get('kind') == 'symlink':
                 destination = resource_path(root,item['path'])
@@ -294,6 +316,8 @@ def prepare_runtime():
     for relative in sorted(resources):
         if relative.startswith('etc/sysctl.d/'):
             run('sysctl','-p',resource_path(Path('/'),relative),timeout=5)
+    enabled=[unit for unit,item in state['services'].items() if item['enabled']]
+    if enabled:run('systemctl','start','--no-block',*enabled,timeout=5)
 
 
 def main():

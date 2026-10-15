@@ -21,6 +21,21 @@ import swap_config
 
 
 class KernelFeatures(unittest.TestCase):
+    def test_maintained_old_image_checks_the_current_shared_baseline(self):
+        with tempfile.TemporaryDirectory() as name:
+            root=Path(name)
+            policy=root/'etc/image-framework/kernel-requirements.json';policy.parent.mkdir(parents=True)
+            policy.write_text(json.dumps({'CONFIG_SECCOMP':['y']}))
+            modules=root/'usr/lib/modules/example';modules.mkdir(parents=True)
+            (root/'lib').symlink_to('usr/lib')
+            (modules/'config').write_text('CONFIG_SECCOMP=y\n')
+            self.assertTrue(node_state.kernel_status(root,'example')['ready'])
+            baseline=root/'usr/lib/armhpc/kernel-baseline.json';baseline.parent.mkdir(parents=True)
+            baseline.write_text(json.dumps({'schema_version':1,'requirements':{'CONFIG_CFS_BANDWIDTH':['y']}}))
+            value=node_state.kernel_status(root,'example')
+            self.assertFalse(value['ready']);self.assertFalse(value['containers_ready'])
+            self.assertIn('CONFIG_CFS_BANDWIDTH',value['missing'])
+
     def test_optional_swap_is_separate_from_container_requirements(self):
         with tempfile.TemporaryDirectory() as name:
             root=Path(name)
@@ -56,6 +71,13 @@ class FirewallTransactions(unittest.TestCase):
         with mock.patch.dict(os.environ,{'SSH_CONNECTION':'172.16.0.9 1200 192.168.100.4 22'}):
             with self.assertRaises(config_io.ConfigError):
                 firewall.settings('worker',['192.168.100.0/24'],['10.10.0.0/24'])
+
+    def test_pods_can_reach_api_dns_and_metrics_without_opening_ssh_or_tunnels(self):
+        value={**self.value,'pod_cidrs':['10.42.0.0/16']}
+        rules=firewall.render(value)
+        self.assertIn('ip saddr 10.42.0.0/16 tcp dport { 53, 6443, 10250 } accept',rules)
+        self.assertNotIn('10.42.0.0/16 tcp dport 22',rules)
+        self.assertNotIn('10.42.0.0/16 udp dport 8472',rules)
 
     def test_crash_between_kernel_write_and_receipt_can_roll_back_owned_intent(self):
         value={'transaction_id':self.identifier,'backup':'old table','previous':{'stage':'confirmed'}}

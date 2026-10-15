@@ -21,6 +21,8 @@ Missing, replaced or read-only DATA blocks dependent services and leaves SSH ava
 
 ## Management network
 
+The normal system retains a separate DATA identity record across OTA, so replacing DATA with an empty disk cannot silently reset the recovery catalog. Rebinding a replacement disk uses the explicit installation/recovery workflow.
+
 ```sh
 armhpc network configure
 armhpc network set --interface eth0 --dhcp --management --family ipv4 --metric 100 --plan --json
@@ -36,6 +38,8 @@ armhpc firewall set --role worker --management-cidr 192.168.100.0/24 --cluster-c
 ```
 
 The firewall command previews its rules. Add `--apply --yes` to apply and confirm from a separate SSH connection within 90 seconds. Use `server` or `server-etcd` where appropriate. Only `table inet armhpc` is managed; external firewall policy is preserved and may still deny traffic. Review CIDRs, SSH port, K3s role and any optional NodePort exposure first.
+
+The preview includes the configured Pod CIDRs for API, DNS and kubelet metrics access, while SSH and overlay tunnel ingress retain their separate trusted node/management ranges. VXLAN, host-gw and wireguard-native have explicit rules; a custom CNI needs its own adapter.
 
 ## Persistent programs and K3s
 

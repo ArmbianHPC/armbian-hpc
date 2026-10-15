@@ -36,7 +36,27 @@ def settings(role,management,cluster,ssh_port=22,nodeport=False):
         require(any(ipaddress.ip_address(connection[0]) in ipaddress.ip_network(n) for n in management),
                 'firewall_ssh','The current SSH client is outside the selected management CIDRs')
         require(int(connection[3])==ssh_port,'firewall_ssh','The configured SSH port differs from this connection')
-    return {'role':role,'management_cidrs':management,'cluster_cidrs':cluster,'ssh_port':ssh_port,'nodeport':bool(nodeport)}
+    pods,backend=pod_network()
+    return {'role':role,'management_cidrs':management,'cluster_cidrs':cluster,'pod_cidrs':pods,
+            'flannel_backend':backend,'ssh_port':ssh_port,'nodeport':bool(nodeport)}
+
+
+def pod_network():
+    policy=read_json(Path('/etc/image-framework/k3s.json'),{})
+    configuration=Path(policy.get('configuration_dir','/data/node-config/k3s'))/'config.yaml'
+    values={}
+    if configuration.is_file():
+        from kube_runtime import check_configuration
+        values=check_configuration(configuration.read_text())
+    backend=values.get('flannel-backend','vxlan')
+    require(backend in ('vxlan','host-gw','wireguard-native'),'firewall_cni',
+            'This CNI needs an explicit firewall adapter before applying the ARMHPC host policy')
+    configured=values.get('cluster-cidr','10.42.0.0/16')
+    flannel=Path(policy.get('data_dir','/data/k3s'))/'agent/etc/flannel/net-conf.json'
+    if flannel.is_file():
+        data=read_json(flannel);configured=[data[key] for key in ('Network','IPv6Network') if data.get(key)] or configured
+    rows=configured if isinstance(configured,list) else str(configured).split(',')
+    return sorted({str(ipaddress.ip_network(row.strip(),strict=False)) for row in rows}),backend
 
 
 def render(value,transaction=None):
@@ -61,9 +81,16 @@ def render(value,transaction=None):
                     '  '+prefix+' saddr '+cidr+' udp dport 30000-32767 accept']
     for cidr in value['cluster_cidrs']:
         prefix='ip6' if ipaddress.ip_network(cidr).version==6 else 'ip'
-        lines+=['  '+prefix+' saddr '+cidr+' tcp dport 10250 accept',
-                '  '+prefix+' saddr '+cidr+' udp dport 8472 accept']
+        lines+=['  '+prefix+' saddr '+cidr+' tcp dport 10250 accept']
+        if value.get('flannel_backend','vxlan')=='vxlan':lines.append('  '+prefix+' saddr '+cidr+' udp dport 8472 accept')
+        elif value.get('flannel_backend')=='wireguard-native':
+            lines.append('  '+prefix+' saddr '+cidr+' udp dport '+('51821' if prefix=='ip6' else '51820')+' accept')
         if value['role']=='server-etcd':lines.append('  '+prefix+' saddr '+cidr+' tcp dport 2379-2380 accept')
+    for cidr in value.get('pod_cidrs',[]):
+        prefix='ip6' if ipaddress.ip_network(cidr).version==6 else 'ip'
+        ports='53, 10250' if value['role']=='worker' else '53, 6443, 10250'
+        lines+=['  '+prefix+' saddr '+cidr+' tcp dport { '+ports+' } accept',
+                '  '+prefix+' saddr '+cidr+' udp dport 53 accept']
     return '\n'.join([*lines,' }','}',''])
 
 

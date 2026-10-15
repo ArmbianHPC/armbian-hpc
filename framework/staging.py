@@ -322,6 +322,9 @@ def stage(root, resolved, output=None):
         'workload': resolved['workload']['id'], 'workload_component': resolved['workload']['component'],
     })
     write_json(generated / 'kernel-requirements.json', resolved['kernel_requirements'])
+    baseline=overlay/'usr/lib/armhpc/kernel-baseline.json'
+    shutil.copyfile(workspace_path(root,'profiles/kernel/kubernetes.json'),baseline)
+    owners['usr/lib/armhpc/kernel-baseline.json']='framework/kernel-baseline'
     write_json(generated / 'boot-chain.json', resolved['board']['boot']['chain'])
     write_json(generated / 'access-policy.json', resolved['os']['access_policy'])
     write_json(generated / 'firmware-policy.json', {'schema_version': 1, **resolved['firmware_policy'],

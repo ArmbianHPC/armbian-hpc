@@ -13,6 +13,8 @@
 
 ## 网络与防火墙
 
+普通系统另行保留 DATA 身份记录并随 OTA 保留，换入没有清单的空盘也不能静默重置恢复状态；更换磁盘仍使用显式安装/恢复流程。
+
 ```sh
 armhpc network configure
 armhpc network set --interface eth0 --dhcp --management --family ipv4 --metric 100 --plan --json
@@ -28,6 +30,8 @@ armhpc firewall set --role worker --management-cidr 192.168.100.0/24 --cluster-c
 默认预览，显式 `--apply --yes` 后，从另一个 SSH 连接在 90 秒内确认。角色可选 worker/server/server-etcd；需要 NodePort 时显式启用。只管理 nftables 的 `table inet armhpc`，保留外部规则；外部拒绝策略仍可能阻止连接。应用前核对 CIDR、SSH 端口和角色。
 
 ## 状态和 K3s 恢复
+
+防火墙预览包含已配置的 Pod CIDR，供 API、DNS 和 kubelet 指标访问；SSH 和隧道入口仍使用独立的可信管理/节点网段。支持 VXLAN、host-gw、wireguard-native，自定义 CNI 需明确适配其规则。
 
 ```sh
 armhpc state status --json

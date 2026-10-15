@@ -68,6 +68,7 @@ def main():
         root=work/name
         if not root.exists():run('cp','-a','--reflink=auto',base,root)
         tools.overlay(root,project/'components/common/rootfs-overlay')
+        shutil.copy2(project/'profiles/kernel/kubernetes.json',root/'usr/lib/armhpc/kernel-baseline.json')
         tools.overlay(root,project/'adapters/boards/wxy-oesp-v22/rootfs-overlay')
         firmware=[]
         for item in resolved['firmware']:

@@ -95,6 +95,25 @@ class StateRecovery(unittest.TestCase):
         self.assertFalse(node_state.status(self.root)['installed']['ready'])
         with self.assertRaises(config_io.ConfigError):node_state.reconcile(self.root,True)
 
+    def test_recovery_binds_the_system_to_data_even_if_another_disk_has_no_catalog(self):
+        node_state.register(self.root,self.manifest)
+        self.mount.stop()
+        def command(*args,**kwargs):
+            if args[0]=='findmnt':
+                return json.dumps({'filesystems':[{'target':str(self.data),'source':'/dev/sda2',
+                    'fstype':'ext4','uuid':'different-data','options':'rw,noatime'}]})
+            raise AssertionError('Changed DATA must fail before examining resources')
+        with mock.patch.object(node_state,'run',side_effect=command):
+            with self.assertRaises(config_io.ConfigError):node_state.data_mount(self.root)
+
+    def test_runtime_queues_registered_enabled_units_after_preparation(self):
+        node_state.register(self.root,self.manifest)
+        state=json.loads((self.data/node_state.CATALOG).read_text())
+        with mock.patch.object(node_state,'load',return_value=(self.data,self.data/node_state.CATALOG,state)),\
+             mock.patch.object(node_state,'inventory',return_value=([],[])),mock.patch.object(node_state,'run') as command:
+            node_state.prepare_runtime()
+        self.assertEqual(command.call_args_list[-1],mock.call('systemctl','start','--no-block','owned.service',timeout=5))
+
 
 class ManagementTransactions(unittest.TestCase):
     setUp=host.HostSettingsTests.setUp

@@ -107,7 +107,7 @@ def apply(value):
     from resource_config import version_supported,validate_kubelet_profile
     from kube_runtime import refresh_recovery,verify_recovery
     verify_recovery()
-    version_supported()
+    if value['profile']!='disabled':version_supported()
     validate_kubelet_profile(('failSwapOn','memorySwap'),'90-armhpc-swap.conf')
     if value['profile']!='disabled':
         from node_state import kernel_status
@@ -115,6 +115,7 @@ def apply(value):
                 'Encrypted swap dependencies are missing from the running kernel')
     data, _ = data_mount(expected=value['data'])
     require(not status()['active'],'swap_active','Disable the active owned swap mapping before changing its profile')
+    require(not Path('/dev/mapper/'+NAME).exists(),'swap_mapping','Inspect and close the existing swap mapping before changing profiles')
     for unit in ('k3s.service','k3s-agent.service'):
         active = subprocess.run(['systemctl','is-active','--quiet',unit], timeout=5).returncode == 0
         require(not active, 'swap_service_active', 'Stop/drain the affected K3s node before changing its swap profile')
@@ -141,7 +142,8 @@ def apply(value):
                      '[Unit]\nRequires=armhpc-swap.service\nAfter=armhpc-swap.service\n\n[Service]\nMemorySwapMax=0\n')
     run('systemctl','daemon-reload')
     refresh_recovery(changed=['data/k3s/agent/etc/kubelet.conf.d/90-armhpc-swap.conf',
-        'etc/systemd/system/k3s.service.d/30-armhpc-swap.conf','etc/systemd/system/k3s-agent.service.d/30-armhpc-swap.conf'])
+        'etc/systemd/system/k3s.service.d/30-armhpc-swap.conf','etc/systemd/system/k3s-agent.service.d/30-armhpc-swap.conf'],allow_uninstalled=value['profile']=='disabled')
+    run('systemctl','stop','armhpc-swap.service',timeout=15)
     return {'configuration':value, 'activation':'next service start', 'data_modified':value['profile']!='disabled'}
 
 
