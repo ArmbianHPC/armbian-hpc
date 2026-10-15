@@ -26,7 +26,7 @@ _armhpc_completion_value_option()
     case $1 in
         --interface|--seconds|--period-ms|--heartbeat|--error|--rootfs|--username|--public-key-file|--policy|--disk|\
         --release|--manifest|--target|--anchor-manifest|--request-id|--job|--interval|--url|--tools-source|--ca|--origin|\
-        --bundle|--phase|--exported-backup-sha256|--kind|--sata|--test-id|--address|--gateway|--dns|--rollback-after|--k3s-version|--transaction) return 0 ;;
+        --bundle|--phase|--exported-backup-sha256|--kind|--sata|--test-id|--address|--gateway|--dns|--rollback-after|--k3s-version|--transaction|--mode) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -36,6 +36,7 @@ _armhpc_complete_value()
     local item name
     local state=${_ARMHPC_COMPLETION_STATE_ROOT:-/var/lib/armhpc/ota}
     case $1 in
+        --mode) _armhpc_complete_words auto on off ;;
         --target) _armhpc_complete_words all system rescue ;;
         --phase) _armhpc_complete_words prepare commit ;;
         --kind) _armhpc_complete_words expire direct-restart panic reboot ;;
@@ -124,13 +125,18 @@ _armhpc_complete()
     if [[ -z $command ]]; then
         if [[ $cur != -* ]]; then
             case $program in
-                armhpc) _armhpc_complete_words hostname network identify watchdog usb-console ota configuration firstrun led rescue ;;
-                armhpc-rescue) _armhpc_complete_words identify watchdog usb-console ota configuration status install restore provision firstrun led boot reboot console ;;
+                armhpc) _armhpc_complete_words hostname network fan identify watchdog usb-console ota configuration firstrun led rescue ;;
+                armhpc-rescue) _armhpc_complete_words fan emmc identify watchdog usb-console ota configuration status install restore provision firstrun led boot reboot console ;;
                 armhpc-kube) _armhpc_complete_words configuration check uninstall reinstall clear ;;
             esac
         fi
     else
         case $command in
+            fan)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status set
+                options+=(--json --yes)
+                [[ $operation != set ]] || options+=(--mode)
+                ;;
             hostname)
                 [[ -n $operation || $cur == -* ]] || _armhpc_complete_words show set configure
                 options+=(--json --yes)
@@ -203,11 +209,12 @@ _armhpc_complete()
                             ;;
                         receive) options+=(--manifest --target --request-id --phase) ;;
                         boot)
-                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words plan apply status rollback
+                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words plan apply status rollback restore
                             case $action in
                                 plan) options+=(--bundle) ;;
                                 apply) options+=(--bundle --request-id --exported-backup-sha256 --commit) ;;
                                 rollback) options+=(--request-id) ;;
+                                restore) options+=(--request-id --execute --yes) ;;
                             esac
                             ;;
                     esac

@@ -1,0 +1,18 @@
+{
+  "protocol": 1,
+  "provider": "amlogic",
+  "ports": [
+    {
+      "interface": "eth0",
+      "driver": "meson-gmac",
+      "match": "platform",
+      "metric": 100
+    },
+    {
+      "interface": "eth1",
+      "driver": "r8152",
+      "match": "usb",
+      "metric": 200
+    }
+  ]
+}

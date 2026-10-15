@@ -16,3 +16,5 @@ armhpc-ota_<版本>_<设备型号>_<系统代号>_<内核版本>_<文件系统>_
 发布前校验两个本地文件和上传后的哈希，再删除旧附件。同名文件内容不同不得覆盖，需使用新版本。
 
 源码检查和导出使用 `image-framework.py check-source` 与 `prepare-source-release`。固件记录包含精确源码 commit 及签名序号，并检查内核／模块／DTB／raw initramfs 配套、永久引导组件、许可及对应源码、身份清理和分区边界。二进制、私钥、凭据、MiniLoader 和节点备份保存在 Git 外。
+
+每次发布通过 --manifest 提供全部机型的完整清单，包含 tag、file、size、sha256，以及每个 IMG 的已审查再分发依据。v1.2.0 的计划清单为 OECT 和 OESP 各一个 IMG.XZ、一个 OTA TAR.XZ，共四项。不得逐机型更新附件；草稿通过 --release-id 定位。

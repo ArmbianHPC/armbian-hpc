@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "kind": "storage",
+  "id": "amlogic-emmc-sata-squashfs-ab",
+  "name": "Amlogic MBR/EPT Rescue A/B + SATA",
+  "strategy": "split-boot-external",
+  "boot_media": "emmc",
+  "external_interface": "sata",
+  "partition_table": "mbr",
+  "filesystem_policy": "amlogic-squashfs-rescue",
+  "alignment_bytes": 1048576,
+  "boot": {
+    "filesystem": "vfat",
+    "label": "OESP_BOOT",
+    "mountpoint": "/boot",
+    "normal_mount_mode": "ro",
+    "size_bytes": 536870912
+  },
+  "rescue": {
+    "filesystem": "squashfs",
+    "label": "OESP_RESCUE_A",
+    "mountpoint": null,
+    "size_bytes": 536870912
+  },
+  "root": {
+    "filesystem": "ext4",
+    "label": "OESP_ROOT",
+    "mountpoint": "/",
+    "size_bytes": 68719476736
+  },
+  "data": {
+    "filesystem": "ext4",
+    "label": "OESP_DATA",
+    "mountpoint": "/data",
+    "size_policy": "remaining_external_aligned_space"
+  },
+  "discovery": {
+    "reject_ambiguous_labels": true
+  },
+  "recovery": {
+    "execution_environment": "emmc_rescue",
+    "rootfs_archive": "factory-rootfs.tar.zst",
+    "default_mode": "system_repair",
+    "default_preserve_data_partition": true,
+    "require_matching_boot_and_modules": true,
+    "preserve_metadata": [
+      "uid",
+      "gid",
+      "mode",
+      "symlinks",
+      "acl",
+      "xattrs",
+      "capabilities"
+    ],
+    "factory_archive_budget_bytes": 2147483648
+  },
+  "kernel_requirements": {
+    "CONFIG_EXT4_FS": [
+      "y",
+      "m"
+    ],
+    "CONFIG_SQUASHFS": [
+      "y",
+      "m"
+    ],
+    "CONFIG_SQUASHFS_XZ": [
+      "y"
+    ],
+    "CONFIG_OVERLAY_FS": [
+      "y",
+      "m"
+    ]
+  },
+  "blockers": [],
+  "validation_todo": [],
+  "rescue_b": {
+    "filesystem": "squashfs",
+    "label": "OESP_RESCUE_B",
+    "mountpoint": null,
+    "size_bytes": 536870912
+  },
+  "shared": {
+    "filesystem": "ext4",
+    "label": "OTA_SHARED",
+    "mountpoint": "/var/lib/armhpc/ota",
+    "size_policy": "remaining_emmc",
+    "grow_on_boot": true
+  },
+  "ota_layout": "oesp-mbr-squashfs-ab-v1",
+  "anchor_abi": "armhpc-anchor-amlogic-mbr-v1",
+  "external_partition_table": "gpt"
+}

@@ -2,7 +2,9 @@
 
 [简体中文](README.zh-CN.md)
 
-ARMHPC **1.1.0** is a modular Linux firmware and device-management framework for ARM64 and ARM32 systems. It provides configurable normal-system and Rescue environments, reusable system components, and board-specific build profiles.
+ARMHPC **1.2.0** is a modular Linux firmware and device-management framework for ARM64 and ARM32 systems. It provides configurable normal-system and Rescue environments, reusable system components, and board-specific build profiles.
+
+OESP OES1PLUS v2.2 adds S922X, dual Ethernet, ASM1064 SATA, FAT32 BOOT, fan control and board-specific LEDs through its own target profile.
 
 ## Architecture
 
@@ -55,13 +57,14 @@ The first file is a compressed flashing image. The second contains signed normal
 
 ## Documentation
 
+- [OES1PLUS v2.2 integration](docs/OESP.md) / [简体中文](docs/OESP.zh-CN.md)
 
 - [Building](docs/BUILD.md)
 - [Board and component integration](docs/ADAPTERS.md)
 - [Device commands](docs/COMMANDS.md)
 - [Sources and firmware inputs](docs/SOURCES.md)
 - [Release policy](docs/RELEASE.md)
-- [v1.1.0 release notes](docs/releases/v1.1.0.md) / [简体中文](docs/releases/v1.1.0.zh-CN.md)
+- [v1.2.0 release notes](docs/releases/v1.2.0.md) / [简体中文](docs/releases/v1.2.0.zh-CN.md)
 - [Known issues](docs/KNOWN-ISSUES.md)
 
 ## License

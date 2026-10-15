@@ -1,0 +1,5 @@
+{
+  "boot_label": "OESP_BOOT",
+  "rescue_label": "OESP_RESCUE_A",
+  "boot_fstype": "vfat"
+}

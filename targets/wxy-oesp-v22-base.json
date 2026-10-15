@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "target",
+  "id": "wxy-oesp-v22-base",
+  "name": "OES1PLUS v2.2 / base",
+  "status": "configured",
+  "architecture": "arm64",
+  "backend": "armbian-v25-08",
+  "board": "wxy-oesp-v22",
+  "os": "debian-bookworm-minimal",
+  "storage": "amlogic-emmc-sata-squashfs-ab",
+  "workload": "base-server",
+  "overrides": {
+    "storage": {
+      "external_interface": "sata",
+      "boot": {
+        "label": "OESP_BOOT"
+      },
+      "rescue": {
+        "label": "OESP_RESCUE_A"
+      },
+      "root": {
+        "label": "OESP_ROOT"
+      },
+      "data": {
+        "label": "OESP_DATA"
+      }
+    }
+  }
+}

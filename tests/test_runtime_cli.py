@@ -112,6 +112,43 @@ class LayoutTests(unittest.TestCase):
         root=self.root();layout.finalize(root,'rescue');layout.finalize(root,'rescue')
         self.assertEqual([p.name for p in (root/'usr/local/sbin').glob('armhpc*')],['armhpc-rescue'])
         self.assertEqual((root/'usr/local/bin/armhpc-rescue').readlink(),Path('../sbin/armhpc-rescue'))
+        marker=root/'etc/armhpc/rescue-environment'
+        self.assertTrue(marker.is_file())
+        with mock.patch.object(cli,'RESCUE_MARKER',marker),mock.patch.object(cli.runpy,'run_path') as run:
+            cli.rescue_main(['led','--status'])
+            run.assert_called_once()
+
+    def test_normal_finalization_removes_a_stale_rescue_marker(self):
+        root=self.root();marker=root/'etc/armhpc/rescue-environment'
+        marker.parent.mkdir(parents=True);marker.write_text('old rescue')
+        layout.finalize(root,'normal')
+        self.assertFalse(marker.exists())
+        layout.validate_environment(root,'normal')
+
+    def test_missing_or_wrong_environment_is_rejected_before_assembly(self):
+        root=self.root()
+        with self.assertRaisesRegex(ValueError,'does not match rescue'):
+            layout.validate_environment(root,'rescue')
+        layout.finalize(root,'rescue')
+        with self.assertRaisesRegex(ValueError,'does not match normal'):
+            layout.validate_environment(root,'normal')
+
+    def test_environment_symlink_is_refused_without_modifying_its_target(self):
+        root=self.root();marker=root/'etc/armhpc/rescue-environment'
+        marker.parent.mkdir(parents=True)
+        outside=root.parent/('outside-'+root.name+'.marker')
+        outside.write_text('keep');self.addCleanup(outside.unlink)
+        marker.symlink_to(outside)
+        for mode in ('normal','rescue'):
+            with self.assertRaisesRegex(ValueError,'symbolic link'):
+                layout.finalize(root,mode)
+        self.assertEqual(outside.read_text(),'keep')
+
+    def test_environment_parent_escape_is_refused(self):
+        root=self.root();(root/'etc').mkdir()
+        (root/'etc/armhpc').symlink_to(root.parent,target_is_directory=True)
+        with self.assertRaisesRegex(ValueError,'escapes root'):
+            layout.finalize(root,'rescue')
 
     def test_owned_k3s_dropins_migrate_without_changing_other_lines(self):
         root=self.root()

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-only
+BOARD_NAME="ARMHPC OES1PLUS v2.2"
+BOARDFAMILY="meson-g12b"
+BOARD_MAINTAINER="ARMHPC"
+BOOTCONFIG="none"
+BOOTSIZE="512"
+BOOTFS_TYPE="fat"
+OFFSET="100"
+KERNEL_TARGET="current"
+SERIALCON="ttyAML0"
+BOOT_FDT_FILE="amlogic/meson-g12b-s922x-armhpc-oes1plus-v22.dtb"

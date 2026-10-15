@@ -2,9 +2,11 @@
 
 [English](README.md)
 
-ARMHPC **1.1.0** 是面向 ARM64／ARM32 系统的模块化 Linux 固件与设备管理框架，提供可配置的普通系统、Rescue 环境、通用系统组件及板卡构建方案。
+ARMHPC **1.2.0** 是面向 ARM64／ARM32 系统的模块化 Linux 固件与设备管理框架，提供可配置的普通系统、Rescue 环境、通用系统组件及板卡构建方案。
 
 本版增加普通系统主机名保留、网络配置确认与回滚、网口绿灯定位、Tab 补全和 K3s 节点管理，并完善国内下载来源与固件打包。
+
+OESP OES1PLUS v2.2 通过独立目标配置接入 S922X、双网口、ASM1064 SATA、FAT32 BOOT、风扇和板卡指示灯。
 
 ## 架构
 
@@ -60,7 +62,7 @@ armhpc-ota_<版本>_<设备型号>_<系统代号>_<内核版本>_<文件系统>_
 - [设备命令](docs/COMMANDS.md)
 - [源码与固件输入](docs/SOURCES.md)
 - [发布规则](docs/RELEASE.zh-CN.md)
-- [v1.1.0 更新说明](docs/releases/v1.1.0.zh-CN.md)
+- [v1.2.0 更新说明](docs/releases/v1.2.0.zh-CN.md)
 - [已知问题](docs/KNOWN-ISSUES.md)
 
 ## 许可证

@@ -1,0 +1,10 @@
+meson_gxbb_wdt
+ahci
+ahci_platform
+stmmac
+dwmac_meson8b
+phy_meson_g12a_usb2
+phy_meson_g12a_usb3_pcie
+phy_meson_axg_pcie
+meson_gx_mmc
+vfat

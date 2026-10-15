@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 
 
 def apply_cpu(policy):
@@ -34,23 +35,35 @@ def apply_devfreq(device):
     return {'device': str(device), 'applied': True, 'governor': 'performance', 'userspace_limits': 'cleared'}
 
 
-def main():
-    if os.geteuid() != 0:
-        raise RuntimeError('Performance setup requires root')
-    subprocess.run(['modprobe', 'governor_performance'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+def collect(cpu_root=Path('/sys/devices/system/cpu/cpufreq'), devfreq_root=Path('/sys/class/devfreq')):
     results = {'overclock': False, 'voltage_table_modified': False, 'thermal_protection': 'kernel defaults retained',
-               'cpu': [], 'devfreq': []}
+               'cpu': [], 'devfreq': [], 'updated_epoch': time.time()}
     for directory, operation, key in (
-        (Path('/sys/devices/system/cpu/cpufreq'), apply_cpu, 'cpu'),
-        (Path('/sys/class/devfreq'), apply_devfreq, 'devfreq')):
+        (Path(cpu_root), apply_cpu, 'cpu'), (Path(devfreq_root), apply_devfreq, 'devfreq')):
         for policy in sorted(directory.glob('policy*' if key == 'cpu' else '*')):
             try:
                 results[key].append(operation(policy))
             except (OSError, ValueError) as error:
                 results[key].append({'device': str(policy), 'applied': False, 'reason': str(error)})
-    destination = Path('/run/armhpc/performance.json')
+    results['cpu_ready'] = bool(results['cpu']) and all(item['applied'] for item in results['cpu'])
+    results['discovery_pending'] = not results['cpu']
+    return results
+
+
+def save_status(destination, results):
+    destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(results, indent=2)+'\n')
+    temporary = destination.with_name('.' + destination.name + '.partial')
+    temporary.write_text(json.dumps(results, indent=2)+'\n')
+    os.replace(temporary, destination)
+
+
+def main():
+    if os.geteuid() != 0:
+        raise RuntimeError('Performance setup requires root')
+    subprocess.run(['modprobe', 'governor_performance'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    results = collect()
+    save_status('/run/armhpc/performance.json', results)
     print(json.dumps(results, indent=2), flush=True)
 
 

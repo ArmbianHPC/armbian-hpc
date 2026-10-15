@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Unit]
+Description=ARMHPC performance policy refresh
+
+[Timer]
+OnBootSec=20s
+OnUnitInactiveSec=30s
+AccuracySec=1s
+Unit=armhpc-performance.service
+
+[Install]
+WantedBy=timers.target

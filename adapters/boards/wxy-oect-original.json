@@ -350,7 +350,7 @@
     {
       "id": "rescue-r5-38",
       "path": "components/common/rootfs-overlay/usr/lib/armhpc/firstboot.py",
-      "sha256": "7016b09e520c62929908e76444bbd89939ecb19ac4523f57397d8f30adb23c1b",
+      "sha256": "862877190482a8688a162ebcd0af9c5055f452bc9a75a95a28aca605d992e1aa",
       "acquire": {
         "type": "repository"
       }
@@ -366,7 +366,7 @@
     {
       "id": "rescue-r5-40",
       "path": "components/common/rootfs-overlay/usr/lib/armhpc/configuration.py",
-      "sha256": "a4e96a2e3a74bd65dd827976b63ba47b22f5a7dcb90646eec688d4f654c5f7cd",
+      "sha256": "737d5ccf5d9e2cdfdef8f62e221454637b15e65a836cb575a7f0fc85b1d129b2",
       "acquire": {
         "type": "repository"
       }
@@ -390,7 +390,7 @@
     {
       "id": "rescue-r5-43",
       "path": "components/rescue/rootfs-overlay/usr/lib/armhpc/rescue.py",
-      "sha256": "1e2487fa703644ea3dcdd60fa495385a0799ece02865a268cddbd4c44b0fdb85",
+      "sha256": "314e0aa07a79ba12e3e30b635e43552f0cf20541e4199591521c36d4e86d9cbe",
       "acquire": {
         "type": "repository"
       }
@@ -446,7 +446,7 @@
     {
       "id": "rescue-r7-53",
       "path": "adapters/boards/wxy-oect-original/rootfs-overlay/etc/armhpc/phy-led.json",
-      "sha256": "fc5466854be8dcfee499da91e64acd2857d6ac5d860dd64694117e93d8e0abaa",
+      "sha256": "95e9dbedf11b9acd62698a83c162af6c26f220188508f7b3e1a168f3edc493bc",
       "acquire": {
         "type": "repository"
       }
@@ -478,7 +478,7 @@
     {
       "id": "rescue-r7-58",
       "path": "components/common/rootfs-overlay/etc/systemd/system/armhpc-performance.service",
-      "sha256": "c1267c9b7c2242bb7061815ae0d9737a392c7c1b8048fc2222fee74de8c8c3db",
+      "sha256": "1830d0695426c4357cf23f2d8794e207e55e83448be317f741efc26c9b0eab09",
       "acquire": {
         "type": "repository"
       }
@@ -486,7 +486,7 @@
     {
       "id": "rescue-r7-59",
       "path": "components/common/rootfs-overlay/usr/lib/armhpc/leds.py",
-      "sha256": "5286326eab425d8f8084e1342c5cc06e2c7a581c071e0574f9c44b52ef43dc96",
+      "sha256": "e8eabfdf760526a9340579e67e843c912919394a2d6bd0f2795c90bee417bdd3",
       "acquire": {
         "type": "repository"
       }
@@ -494,7 +494,7 @@
     {
       "id": "rescue-r7-60",
       "path": "components/common/rootfs-overlay/usr/lib/armhpc/performance.py",
-      "sha256": "dd1c71204236ae84fdf3c0995bb93e72d0c9d6e50e17575785e32fa716e16b65",
+      "sha256": "e2211a0bfaa0a8e5d65eed9fffd48d131eeff82f8160e76c0e9d30b1c1c861e7",
       "acquire": {
         "type": "repository"
       }
@@ -518,7 +518,7 @@
     {
       "id": "rescue-r7-65",
       "path": "tests/test_rgb_performance.py",
-      "sha256": "095ceda9462168b5a1b5f2865907b963d3252e43f9efd406610ca4bf08c99537",
+      "sha256": "3a6e7d41a3607e4606ac0822d51a6a4674a397a28dddc613725d86f522a44d05",
       "acquire": {
         "type": "repository"
       }
@@ -622,7 +622,7 @@
     {
       "id": "command-groups-78",
       "path": "components/common/rootfs-overlay/usr/lib/armhpc/cli.py",
-      "sha256": "894330c6bcc912381c3ac94bb6d3ccbe8135b973a4ff6143bdbfdbc00659dbab",
+      "sha256": "7e9aaecd7ac573dc19152a865505f1b78b1173b78c7ecf3a43bc66e75a50b376",
       "acquire": {
         "type": "repository"
       }
@@ -630,7 +630,7 @@
     {
       "id": "command-groups-79",
       "path": "components/common/rootfs-overlay/usr/lib/armhpc/command_layout.py",
-      "sha256": "9e20e0dc1a038b7429f563838e66169c64042acaceb2eb4299e451914cfcbac5",
+      "sha256": "16e58a69fa21c5748349ea07b03e7cc3947425a884a4ace6d8c3b766d9cac4d5",
       "acquire": {
         "type": "repository"
       }
@@ -646,7 +646,7 @@
     {
       "id": "command-groups-81",
       "path": "components/k3s/rootfs-overlay/usr/lib/armhpc/kube_setup.py",
-      "sha256": "c0d7293aa47990901d0f8966ba105b90762461eddb0c228cc4ca0a683b89ff19",
+      "sha256": "007ef6fb6313505067792b0e7da3b661ab830393500337abc66d06dcb59c3478",
       "acquire": {
         "type": "repository"
       }
@@ -702,7 +702,7 @@
     {
       "id": "command-groups-88",
       "path": "tests/test_framework.py",
-      "sha256": "0b6fe74169fd38fc5f990f46e9df3718137467ce18678577aae78795337f1e53",
+      "sha256": "e1b0e7217ffe9c4ac8849e00ae2174158c4d646b9812fed5fd8a54116eaef7d1",
       "acquire": {
         "type": "repository"
       }
@@ -718,7 +718,7 @@
     {
       "id": "command-groups-90",
       "path": "tests/test_runtime_cli.py",
-      "sha256": "9358b2043e5fa94dbdbfd0e01091c8aedace468cae3cf1b79199b1dc7fa737ea",
+      "sha256": "19cd65808a8d03bcbdc9246afa39007cbb21b24b61f703b755e045852e2cf2da",
       "acquire": {
         "type": "repository"
       }
@@ -734,7 +734,7 @@
     {
       "id": "command-groups-93",
       "path": "docs/COMMANDS.md",
-      "sha256": "f89121afbc69b4a98680ebdde64fc43b66def64e75a57a8e986c0447bc2973ac",
+      "sha256": "81f7d2c2bc121704dc6d28b019f8e703ec2cb630459d989637fdbd51fbedecff",
       "acquire": {
         "type": "repository"
       }
@@ -742,7 +742,7 @@
     {
       "id": "command-groups-94",
       "path": "docs/SSH-SETUP.md",
-      "sha256": "7b26ad0d2d5db89852e23dffa83b8a8d6ff9fab8f5c13dbffbb618c3b5777bab",
+      "sha256": "d2c657d6f53e75f268be8a5c8767a40c54094ff81e21f3ebad81f389981b8ca0",
       "acquire": {
         "type": "repository"
       }
@@ -750,7 +750,7 @@
     {
       "id": "command-groups-95",
       "path": "README.md",
-      "sha256": "843bb0b39dfa1c9d650c7a760016b14ea5bc8de8e1a29b6ab8c540a525a39ce4",
+      "sha256": "ddf585e5745b00da1a2825e7b9efbf057b9270319e1a3c3acaeb24bd83dc5176",
       "acquire": {
         "type": "repository"
       }
@@ -774,7 +774,7 @@
     {
       "id": "usb-console-0",
       "path": "components/common/rootfs-overlay/usr/lib/armhpc/usb_console.py",
-      "sha256": "f7fc3c8f24fa1b8ce3f638c1d00573a790ed95a20c3378192675f96edb021d96",
+      "sha256": "c219d5214fe84f1418535e576cd200244108dda966aea9f1e2e55e8d1afd10fa",
       "acquire": {
         "type": "repository"
       }
@@ -806,7 +806,7 @@
     {
       "id": "usb-console-4",
       "path": "tests/test_usb_console.py",
-      "sha256": "8009fa5c00bf32e583fb0b4aad6cfef1ad37585a3a034a657b595e4d9c3c6480",
+      "sha256": "401a5571eff5d1bfe1c098b11176db8607ab96ff6d0990ef1db64e59c6b8d412",
       "acquire": {
         "type": "repository"
       }
@@ -830,7 +830,7 @@
     {
       "id": "prepare-oect-squashfs",
       "path": "tools/build/prepare-oect-squashfs.py",
-      "sha256": "1665bdd919c81918427df0144783cc600a23b1d15918afc374cd451f21b20d66",
+      "sha256": "956123ef951311e5dc06fb6034f4c19c016ec3dee1d37a9cb69d9f592d305222",
       "acquire": {
         "type": "repository"
       }
@@ -838,7 +838,7 @@
     {
       "id": "assemble-oect-squashfs",
       "path": "tools/build/assemble-oect-squashfs.py",
-      "sha256": "2841c045f9f6f65392510b80838ec2ce20f920706b44ba9372710221175f4b5b",
+      "sha256": "0a6303cfee0103124f9b8335b3883be058fc42ac9f5cdfbf033ca53218e9a65a",
       "acquire": {
         "type": "repository"
       }

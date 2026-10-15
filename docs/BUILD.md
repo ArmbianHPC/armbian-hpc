@@ -1,25 +1,28 @@
-# 框架构建
+# Framework builds
 
-1. 检出 armbian-hpc 与 armhpc-ota 的匹配版本。
-2. 使用 `image-framework.py validate/plan/stage` 准备目标配置；`fetch-sources` 获取固定来源。
-3. 通过固定 Armbian 后端构建 rootfs、内核、模块和 DTB，或显式提供经过哈希校验的构建输入。
-4. `tools/build/prepare-rootfs-artifact.sh` 展开根文件系统并应用目标运行时；`prepare-ota-root.py` 使用独立 OTA 安装器。
-5. OECT 使用 `prepare-oect-squashfs.py` 准备 normal/rescue/public/boot 根目录，输出新的 boot-manifest.json，`assemble-oect-squashfs.py` 装配 eMMC A/B。
+[简体中文](BUILD.zh-CN.md)
 
-组装输入明确指定 release、sequence、epoch、boot-manifest、base-image SHA256 和 base-provenance.json、签名 key-id 及目录，不依赖某次历史构建的路径或标记文件。启动清单包含 kernel_release 及 kernel/dtb/initramfs 的 SHA256；模块必须与实际内核配套。
+Check out matching framework and OTA commits. Use `scripts/image-framework.py list`, `validate`, `plan`, `stage` and `fetch-sources` to prepare target inputs. Build outside source repositories.
 
-系统 OTA 载荷由 `tools/build/prepare-oect-release.py` 准备。普通系统为 ext4 压缩镜像，Rescue 为 SquashFS；SOURCE_DATE_EPOCH 与版本记录来自构建参数。
+OECT uses GPT and ext4 BOOT; OESP uses a separately audited Amlogic reservation, MBR and FAT32 BOOT. Both targets provide SquashFS Rescue A/B, shared ext4, and a SATA ext4 normal system and DATA partition. Use the board-specific kernel/root preparation and assembly entries under `tools/build`.
 
-完整 IMG、OTA 载荷与压缩包生成在源码目录外；公开发行按 RELEASE.md 另行检查许可和对应源码。
+## Fixed BOOT software refresh
 
-`prepare-oect-squashfs.py` 校验输入 BOOT 清单，生成新的原始 initramfs 和输出清单；随后运行 `compare-squashfs.py`，再将输出清单传给组装器。共享目录由组装器初始化，序号写入控制记录。
+Use `tools/build/refresh-fixed-boot-roots.py` with explicit `--project`, `--ota-source`, `--input-roots`, `--boot-manifest`, `--work`, `--watchdog-binary`, `--board`, `--release` and `--epoch` inputs. It verifies all three BOOT hashes and matching modules in four roots before and after software refresh. It does not regenerate initramfs. This path creates software OTA updates compatible with an existing fixed BOOT pair. A changed kernel or DTB requires the separate paired BOOT maintenance path.
 
-压缩比较必须通过 `--ota-source` 指定匹配的 OTA 源码检出，不依赖构建机已安装的 Python 包。源码路径无效时，在创建压缩输出前拒绝执行。
+Run `tools/build/prepare-firmware-inputs.py` before packaging shared runtime resources. Board firmware is downloaded from its pinned source and checked against its hash and redistribution record.
+
+## Packaging
+
+Generate signed payloads with the board assembler. `tools/build/prepare-firmware-package.py` takes exact committed project sources, signed artifacts, sanitized public roots, a hash-pinned corresponding-source manifest and build provenance. It includes project/kernel/retained-BOOT sources, distribution package versions, copyright files and licenses in the OTA transport.
+
+`tools/build/pack-firmware.py` compresses and verifies the complete IMG and canonical OTA archive. For OESP, first export the signed raw image through `package-oesp-burn.py` as the native USB Burning Tool container, then pass that container to the common packager. Include the kernel configuration and patches for the retained boot pair. Keep private boot inputs and credentials outside Git. Public image distribution requires actual component license evidence.
 
 ```sh
-python3 tools/build/compare-squashfs.py \
-  --root /work/public/rescue --ota-source /src/armhpc-ota \
-  --output /work/compression --epoch "$SOURCE_DATE_EPOCH"
+python3 -m pip install -r requirements-test.txt
+PYTHONPATH=../armhpc-ota/src python3 -m pytest tests
 ```
 
-固件 XZ 归档与上位机包格式校验见 [Firmware packaging](FIRMWARE-PACKAGING.md)。
+The complete suite uses pytest to collect both unittest and function-based checks. Firmware publish uses a single manifest listing both files for every model, including their exact sizes, hashes and image redistribution evidence. See [release policy](RELEASE.md).
+
+For offline builds, pass --from-directory VERIFIED_FIRMWARE_DIRECTORY to firmware preparation. The input bytes must match the same board SHA256 and license record; this option does not change trust or permit unreviewed firmware.

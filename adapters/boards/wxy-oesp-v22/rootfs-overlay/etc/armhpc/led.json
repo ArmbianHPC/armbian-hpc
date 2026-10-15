@@ -1,0 +1,17 @@
+{
+  "channels": {
+    "green": "green:power",
+    "red": "red:power"
+  },
+  "heartbeat": false,
+  "mode_colours": {
+    "rescue": {"red": 0, "green": 1, "blue": 0},
+    "normal": {"red": 0, "green": 1, "blue": 0},
+    "error": {"red": 1, "green": 0, "blue": 0}
+  },
+  "network": {
+    "interfaces": ["eth0", "eth1"],
+    "channels": {"green": "green:lan", "red": "red:lan"},
+    "inverted_channels": ["red"]
+  }
+}

@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+[Unit]
+Description=ARMHPC fan control
+ConditionPathExists=/etc/armhpc/fan.json
+After=local-fs.target armhpc-firstboot.service
+Before=ssh.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/fan.py _service
+ExecStopPost=/usr/bin/python3 /usr/lib/armhpc/fan.py _safe-on
+Restart=on-failure
+RestartSec=1
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

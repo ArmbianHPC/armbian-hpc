@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "cooling_type": "gpio-fan",
+  "mode": "auto",
+  "on_millicelsius": 55000,
+  "off_millicelsius": 47000,
+  "protect_millicelsius": 55000
+}

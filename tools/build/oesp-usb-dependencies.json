@@ -1,0 +1,32 @@
+{
+  "pyamlboot": {
+    "commit": "d7806acc4f0a9a9d89b4e32a5c9a0ae03f7d11bf",
+    "url": "https://api.github.com/repos/superna9999/pyamlboot/tarball/d7806acc4f0a9a9d89b4e32a5c9a0ae03f7d11bf",
+    "file": "pyamlboot-pinned.tar.gz",
+    "sha256": "bcbe3a785417f54bb0758877176b40ae12e01dbb43a4242e9ac04b142a050008",
+    "license": "MIT alternatives in individual modules"
+  },
+  "wheels": [
+    {
+      "name": "PyUSB",
+      "version": "1.3.1",
+      "file": "pyusb-1.3.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/28/b8/27e6312e86408a44fe16bd28ee12dd98608b39f7e7e57884a24e8f29b573/pyusb-1.3.1-py3-none-any.whl",
+      "sha256": "bf9b754557af4717fe80c2b07cc2b923a9151f5c08d17bdb5345dac09d6a0430"
+    },
+    {
+      "name": "importlib_resources",
+      "version": "6.5.2",
+      "file": "importlib_resources-6.5.2-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/a4/ed/1f1afb2e9e7f38a545d628f864d562a5ae64fe6f7a10e28ffb9b185b4e89/importlib_resources-6.5.2-py3-none-any.whl",
+      "sha256": "789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec"
+    },
+    {
+      "name": "libusb-package",
+      "version": "1.0.30.0",
+      "file": "libusb_package-1.0.30.0-py3-none-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/60/4a/ff49bd77f33af05ca26fee29d601beb1e19ca791bb86efece82a3833885c/libusb_package-1.0.30.0-py3-none-win_amd64.whl",
+      "sha256": "90808da724c8939a333d931d0c7226372ca5fefd98e2f2f3ef79fd918aa37522"
+    }
+  ]
+}

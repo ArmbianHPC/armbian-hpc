@@ -7,7 +7,7 @@ Before=multi-user.target
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/python3 /usr/lib/armhpc/performance.py
-RemainAfterExit=yes
+TimeoutStartSec=10
 NoNewPrivileges=yes
 ProtectHome=yes
 

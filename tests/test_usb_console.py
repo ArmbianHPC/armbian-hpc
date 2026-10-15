@@ -78,6 +78,47 @@ class UsbConsoleTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 usb.configure(config, 'test-serial', self.gadgets, self.udcs)
 
+    def test_manual_console_policy_does_not_enable_boot_services(self):
+        root=self.root/'manual'
+        (root/'etc/armhpc').mkdir(parents=True)
+        (root/'etc/armhpc/usb-console.json').write_text(json.dumps({**self.config,'automatic_start':False}))
+        self.assertEqual(commands.enable_usb_console(root),[])
+        self.assertFalse((root/'etc/systemd/system/multi-user.target.wants').exists())
+
+    def test_oesp_role_switch_restores_host_and_preserves_network_port(self):
+        roles=self.root/'roles'
+        role=roles/'ffe09000.usb-role-switch/role'
+        role.parent.mkdir(parents=True);role.write_text('host\n')
+        config={**self.config,'role_controller_address':'ffe09000','otg_host_port':2,
+                'protected_usb_interfaces':['eth1']}
+        network=self.root/'net'
+        device=self.root/'soc/usb1/1-1/1-1:1.0'
+        device.mkdir(parents=True);(network/'eth1').mkdir(parents=True)
+        (network/'eth1/device').symlink_to(device)
+        state=self.root/'role-state.json'
+        usb.acquire_device_role(config,roles,network,state)
+        self.assertEqual(role.read_text().strip(),'device')
+        usb.acquire_device_role(config,roles,network,state)
+        usb.restore_role(config,roles,state)
+        self.assertEqual(role.read_text().strip(),'host')
+        self.assertFalse(state.exists())
+
+    def test_oesp_role_switch_rejects_network_device_on_otg_port(self):
+        roles=self.root/'roles'
+        role=roles/'ffe09000.usb-role-switch/role'
+        role.parent.mkdir(parents=True);role.write_text('host\n')
+        config={**self.config,'role_controller_address':'ffe09000','otg_host_port':2,
+                'protected_usb_interfaces':['eth1']}
+        network=self.root/'net'
+        device=self.root/'soc/usb1/1-2/1-2:1.0'
+        device.mkdir(parents=True);(network/'eth1').mkdir(parents=True)
+        (network/'eth1/device').symlink_to(device)
+        state=self.root/'role-state.json'
+        with self.assertRaisesRegex(ValueError,'protected network'):
+            usb.acquire_device_role(config,roles,network,state)
+        self.assertEqual(role.read_text().strip(),'host')
+        self.assertFalse(state.exists())
+
     def test_gadget_path_symlink_is_refused(self):
         destination = self.root / 'outside'
         destination.mkdir()

@@ -177,15 +177,15 @@ def choose_identity(vendor_mac, saved, cid=None):
     return random_mac(), 'random'
 
 
-def labelled_partition(label):
+def labelled_partition(label, filesystem='ext4'):
     result = subprocess.run(['blkid', '-c', '/dev/null', '-t', 'LABEL=' + label, '-o', 'device'],
                             text=True, capture_output=True, timeout=10)
     found = result.stdout.splitlines() if result.returncode in (0, 2) else []
     if len(found) != 1:
         raise ValueError('Expected one filesystem with label ' + label)
     device = Path(found[0]).resolve(strict=True)
-    if not device.is_block_device() or run('blkid', '-s', 'TYPE', '-o', 'value', device, capture=True) != 'ext4':
-        raise ValueError('Identity store must be a block-device ext4 partition')
+    if not device.is_block_device() or run('blkid', '-s', 'TYPE', '-o', 'value', device, capture=True) != filesystem:
+        raise ValueError('Identity store must be a block-device '+filesystem+' partition')
     return device
 
 
@@ -202,7 +202,7 @@ def identity_store():
     shared_root = Path('/var/lib/armhpc/ota')
     if (shared_root/'identity-root').is_dir():
         shared = labelled_partition('OTA_SHARED')
-        boot = labelled_partition(policy['boot_label'])
+        boot = labelled_partition(policy['boot_label'],policy.get('boot_fstype','ext4'))
         active_shared = Path(run('findmnt', '-rn', '--mountpoint', str(shared_root), '-o', 'SOURCE', capture=True).split('[')[0]).resolve()
         if active_shared != shared or parent_disk(shared) != parent_disk(boot):
             raise ValueError('OTA shared identity is not on the expected eMMC mount')
@@ -246,6 +246,14 @@ def interface_name():
 
 
 def configure_network():
+    ports_policy=Path('/etc/armhpc/network-ports.json')
+    if ports_policy.is_file() and json.loads(ports_policy.read_text()).get('provider')=='amlogic':
+        import sys
+        sys.path.insert(0,str(Path(__file__).resolve().parent))
+        from network_ports import configure
+        with identity_store() as (store,disk,policy): selected=configure(store)
+        configure_hostname(selected)
+        return
     name = interface_name()
     with identity_store() as (store, disk, policy):
         info = Path('/sys/class/block')/disk.name/'device'
@@ -316,7 +324,7 @@ def complete_password_access(root=Path('/')):
     if root == Path('/'):
         shared = Path('/var/lib/armhpc/ota')
         ota = None
-        if shared.is_mount() and Path('/run/armhpc/ota-boot.json').is_file():
+        if shared.is_mount() and Path('/run/armhpc/ota-boot.json').is_file() and not Path('/run/armhpc-install-medium').exists():
             import sys
             sys.path.insert(0, '/usr/lib/armhpc-ota')
             from armhpc_ota.config import Config

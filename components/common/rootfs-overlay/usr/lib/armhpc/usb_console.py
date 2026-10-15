@@ -14,6 +14,8 @@ CONFIG = Path('/etc/armhpc/usb-console.json')
 GADGETS = Path('/sys/kernel/config/usb_gadget')
 UDCS = Path('/sys/class/udc')
 NAME = 'armhpc-console'
+ROLES = Path('/sys/class/usb_role')
+ROLE_STATE = Path('/run/armhpc/usb-console-role.json')
 
 
 def read(path):
@@ -52,6 +54,57 @@ def serial_number():
     if not machine:
         raise ValueError('USB serial identity is not initialized yet')
     return hashlib.sha256(('armhpc-usb:' + machine).encode()).hexdigest()[:24]
+
+
+def role_path(config, root=ROLES):
+    address=config.get('role_controller_address')
+    if address is None:
+        return None
+    if not re.fullmatch(r'[0-9a-f]{8}',address):
+        raise ValueError('Invalid USB role controller address')
+    matches=[path/'role' for path in root.iterdir() if path.name.startswith(address+'.') and (path/'role').is_file()]
+    if len(matches)!=1:
+        raise ValueError('USB role controller is absent or ambiguous')
+    return matches[0]
+
+
+def acquire_device_role(config, root=ROLES, network=Path('/sys/class/net'), state=ROLE_STATE):
+    role=role_path(config,root)
+    if role is None:
+        return
+    port=config.get('otg_host_port')
+    if port not in (1,2):
+        raise ValueError('Unknown OTG host port')
+    for interface in config.get('protected_usb_interfaces',[]):
+        if not re.fullmatch(r'[A-Za-z0-9_.-]{1,15}',interface):
+            raise ValueError('Invalid protected USB interface')
+        device=network/interface/'device'
+        if device.exists() and re.search(r'/\d+-'+str(port)+r'(?:/|:)',str(device.resolve())):
+            raise ValueError('OTG port is occupied by the protected network interface '+interface)
+    previous=read(role)
+    if previous not in ('host','device','none'):
+        raise ValueError('Unknown USB role state')
+    state=Path(state)
+    if not state.exists():
+        state.parent.mkdir(parents=True,exist_ok=True)
+        state.write_text(json.dumps({'role':role.parent.name,'previous':previous})+'\n')
+        state.chmod(0o600)
+    if previous!='device':
+        role.write_text('device\n')
+        if read(role)!='device':
+            raise ValueError('USB device role did not take effect')
+
+
+def restore_role(config, root=ROLES, state=ROLE_STATE):
+    state=Path(state)
+    if not state.is_file():
+        return
+    saved=json.loads(state.read_text())
+    role=role_path(config,root)
+    if role is None or saved.get('role')!=role.parent.name or saved.get('previous') not in ('host','device','none'):
+        raise ValueError('USB role restoration identity differs')
+    role.write_text(saved['previous']+'\n')
+    state.unlink()
 
 
 def configure(config, serial, gadgets=GADGETS, udcs=UDCS):
@@ -142,11 +195,21 @@ def start():
             if time.monotonic() >= deadline:
                 raise
             time.sleep(0.5)
-    configure(config, serial_number())
+    udc=controller(config)
+    for gadget in GADGETS.iterdir():
+        if gadget.name!=NAME and read(gadget/'UDC')==udc:
+            raise ValueError('The board USB controller is already used by another gadget')
+    acquire_device_role(config)
+    try:
+        configure(config, serial_number())
+    except Exception:
+        restore_role(config)
+        raise
     if not Path('/dev/ttyGS0').exists():
         subprocess.run(['udevadm', 'settle', '--timeout=5'], check=True)
     if not Path('/dev/ttyGS0').exists():
         raise ValueError('ACM bound but ttyGS0 is missing')
+    subprocess.run(['systemctl','start','--no-block','serial-getty@ttyGS0.service'],check=True)
     return status()
 
 
@@ -160,6 +223,8 @@ def stop(gadgets=GADGETS):
         if read(gadget / 'strings/0x409/product') != 'ARMHPC Console':
             raise ValueError('Unexpected gadget ownership')
         (gadget / 'UDC').write_text('\n')
+    config=json.loads(CONFIG.read_text()) if CONFIG.is_file() else {}
+    restore_role(config)
     return {'bound_controller': None, 'gadget': NAME}
 
 

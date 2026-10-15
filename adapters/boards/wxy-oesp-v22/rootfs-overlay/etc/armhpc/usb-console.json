@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "automatic_start": false,
+  "controller_address": "ff400000",
+  "role_controller_address": "ffe09000",
+  "otg_host_port": 2,
+  "protected_usb_interfaces": ["eth1"],
+  "vendor_id": "0x0525",
+  "product_id": "0xa4a7"
+}

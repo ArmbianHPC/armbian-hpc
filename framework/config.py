@@ -135,7 +135,9 @@ def validate_storage(storage, board):
     else:
         require(storage['external_interface'] is None, '单盘布局不能指定外置系统介质。')
         require(storage['rescue'] is None, '当前单盘配置使用外部救援环境。')
-    require(storage['partition_table'] == 'gpt', '当前存储配置接口使用 GPT。')
+    require(storage['partition_table'] == 'gpt' or
+            (storage['partition_table'] == 'mbr' and board.get('soc') == 'amlogic-s922x'
+             and board.get('boot',{}).get('partition_table') == 'mbr'), '分区表策略与板卡不匹配。')
     alignment = storage['alignment_bytes']
     size = storage['root']['size_bytes']
     require(isinstance(alignment, int) and alignment >= 1048576
@@ -157,6 +159,9 @@ def validate_storage(storage, board):
             require(filesystem == 'ext4', '所选存储配置要求系统、BOOT、共享区和 DATA 全部使用 ext4。')
         if storage.get('filesystem_policy') == 'all-ext4':
             require(filesystem == 'ext4', '所选存储配置要求全部使用 ext4。')
+        if storage.get('filesystem_policy') == 'amlogic-squashfs-rescue':
+            expected='vfat' if role=='boot' else 'squashfs' if role in ('rescue','rescue_b') else 'ext4'
+            require(filesystem == expected, 'Amlogic 存储角色与文件系统不匹配。')
         if filesystem == 'vfat':
             require(re.fullmatch(r'[A-Z0-9_]{1,11}', label), 'vfat 标签必须为至多 11 个大写字母、数字或下划线。')
         labels.append(label)

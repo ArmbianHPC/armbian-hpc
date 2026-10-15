@@ -328,7 +328,7 @@ class FrameworkTests(unittest.TestCase):
 
     def test_catalog_does_not_claim_arm32_hardware_support(self):
         listing = catalog(self.root)
-        self.assertEqual([item['id'] for item in listing['board']], ['wxy-oect-original'])
+        self.assertEqual([item['id'] for item in listing['board']], ['wxy-oect-original','wxy-oesp-v22'])
         self.assertEqual(listing['board'][0]['architectures'], ['arm64'])
         self.assertEqual(listing['board'][0]['status'], 'source_prepared')
 

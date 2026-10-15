@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[Match]
+Name=eth1
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=yes
+
+[DHCPv4]
+RouteMetric=200
+
+[IPv6AcceptRA]
+RouteMetric=200

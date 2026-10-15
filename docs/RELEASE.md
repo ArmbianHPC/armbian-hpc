@@ -6,7 +6,7 @@ Use the tag as the release title, for example `v1.0.0`. Release descriptions use
 
 ## Attachments
 
-Upload only the flashing image and the signed system OTA package. Both use XZ compression:
+Upload one flashing image and one signed system OTA package per selected model. For v1.2.0 the complete set is OECT and OESP, four files in total. Both use XZ compression:
 
 ```text
 armhpc_<version>_<model>_<distribution>_<kernel>_<filesystem>_<build-date>.img.xz
@@ -17,7 +17,7 @@ Use the actual `YYYYMMDD` build date, the kernel version without its package suf
 
 Include signed manifests, payload hashes, license materials, build provenance, and corresponding source information inside the OTA archive or image. Additional checksums, reports, source archives, and inventories are not uploaded as separate release assets. GitHub generates its automatic Source code links.
 
-The publishing policy verifies the two local packages and their uploaded hashes before removing obsolete attachments. Existing versioned files with different bytes must not be overwritten.
+Provide one --manifest JSON with the tag and all packages (file, size, sha256, plus reviewed redistribution evidence for each IMG). The publishing policy verifies the complete local package set and their uploaded hashes before removing obsolete attachments. Existing versioned files with different bytes must not be overwritten.
 
 ## Build and source records
 

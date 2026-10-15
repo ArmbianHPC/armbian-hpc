@@ -8,6 +8,7 @@ import sys
 LIBRARY=Path(__file__).resolve().parent
 RESCUE_MARKER=Path('/etc/armhpc/rescue-environment')
 NORMAL={
+    'fan':('fan.py','查看风扇和温度，设置自动、开启或关闭模式。'),
     'hostname':('hostname_config.py','查看、修改普通系统主机名，或打开主机名向导。'),
     'network':('network_config.py','查看网络，配置 DHCP、静态 IPv4、网关和 DNS；超时未确认自动回滚。'),
     'identify':('net_identify.py','规律闪烁网口绿灯以定位设备，结束或停止后恢复原灯态。'),
@@ -27,6 +28,8 @@ KUBE={
     'clear':('kube_manage.py','清理未完成安装及半成品数据，拒绝清理已安装节点。'),
 }
 RESCUE={
+    'emmc':('emmc.py','创建私有 eMMC 备份并安装签名的完整 OESP 镜像。'),
+    'fan':('fan.py','查看风扇和温度，设置自动、开启或关闭模式。'),
     'identify':('net_identify.py','规律闪烁网口绿灯以定位设备，结束或停止后恢复原灯态。'),
     'watchdog':('watchdog.py','准备、执行和报告受控复位诊断；并发仅 1。'),
     'usb-console':('usb_console.py','查看、启停 OTG 虚拟串口，读取当前或上次 Linux 启动日志。'),

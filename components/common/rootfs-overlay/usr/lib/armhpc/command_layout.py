@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
-"""Keep only the role's public entrypoints and migrate owned K3s checks."""
+"""Keep the environment marker and public entrypoints consistent with the role."""
 from pathlib import Path
 
 RETIRED=(
@@ -10,6 +10,36 @@ RETIRED=(
     'node-setup','k3s-setup','k3s-preflight','node-install-admin','oect-setup','oect-k3s-preflight',
 )
 GROUPS=('armhpc','armhpc-kube','armhpc-rescue')
+
+
+def environment_marker(root):
+    root=Path(root).resolve(strict=True)
+    path=root/'etc/armhpc/rescue-environment'
+    if not path.parent.resolve().is_relative_to(root) or path.is_symlink():
+        raise ValueError('Environment marker escapes root or is a symbolic link')
+    if path.exists() and not path.is_file():
+        raise ValueError('Environment marker must be an ordinary file')
+    return path
+
+
+def validate_environment(root,mode):
+    if mode not in ('normal','rescue'):raise ValueError('Unknown command layout mode')
+    marker=environment_marker(root)
+    if marker.is_file() != (mode=='rescue'):
+        raise ValueError('Root environment marker does not match '+mode+': '+str(root))
+
+
+def set_environment(root,mode):
+    if mode not in ('normal','rescue'):raise ValueError('Unknown command layout mode')
+    marker=environment_marker(root)
+    if mode=='rescue':
+        marker.parent.mkdir(parents=True,exist_ok=True)
+        if not marker.exists():
+            marker.write_text('ARMHPC Rescue environment\n',encoding='ascii')
+        marker.chmod(0o644)
+    else:
+        marker.unlink(missing_ok=True)
+    validate_environment(root,mode)
 
 
 def migrate_rescue_resources(root):
@@ -45,7 +75,9 @@ def enable_usb_console(root):
     import json
     root=Path(root)
     config=root/'etc/armhpc/usb-console.json'
-    if not config.is_file() or not json.loads(config.read_text()).get('enabled'):return []
+    if not config.is_file():return []
+    policy=json.loads(config.read_text())
+    if not policy.get('enabled') or not policy.get('automatic_start',True):return []
     for relative in ('usr/lib/armhpc/usb_console.py','etc/systemd/system/armhpc-usb-console.service'):
         if not (root/relative).is_file():raise ValueError('Missing USB console resource: '+relative)
     wanted=root/'etc/systemd/system/multi-user.target.wants'
@@ -62,6 +94,7 @@ def enable_usb_console(root):
 def finalize(root,mode):
     root=Path(root).resolve(strict=True)
     if mode not in ('normal','rescue'):raise ValueError('Unknown command layout mode')
+    environment_marker(root)
     kept=('armhpc','armhpc-kube') if mode=='normal' else ('armhpc-rescue',)
     removed=[]
     for directory in ('usr/local/bin','usr/local/sbin'):
@@ -96,4 +129,5 @@ def finalize(root,mode):
         if updated!=text:path.write_text(updated)
     migrated=migrate_rescue_resources(root) if mode=='rescue' else []
     enabled=enable_usb_console(root)
+    set_environment(root,mode)
     return {'mode':mode,'entrypoints':[name for name in kept if (root/'usr/local/sbin'/name).is_file()],'removed':removed,'migrated_resources':migrated,'usb_console_services':enabled}

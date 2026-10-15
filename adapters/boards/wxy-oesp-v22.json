@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "board",
+  "id": "wxy-oesp-v22",
+  "name": "WXY OES1PLUS v2.2",
+  "status": "configured",
+  "soc": "amlogic-s922x",
+  "architectures": [
+    "arm64"
+  ],
+  "storage_interfaces": [
+    "emmc",
+    "sata",
+    "usb"
+  ],
+  "expected_hardware": {
+    "ram_bytes": 4294967296,
+    "emmc_capacity_class": "8 GB",
+    "confirmed_by_user": true,
+    "verified_on_device": false,
+    "pcb": "oes1plus-v2.2"
+  },
+  "boot": {
+    "dtb": "amlogic/meson-g12b-s922x-armhpc-oes1plus-v22.dtb",
+    "dts": "adapters/boards/wxy-oesp-v22/dts/meson-g12b-s922x-armhpc-oes1plus-v22.dts",
+    "normal_root_interface": "sata",
+    "recovery_environment": "emmc_rescue",
+    "cpu_overclock": false,
+    "chain": {
+      "provider": "user",
+      "scope": "complete-board-chain",
+      "build_in_framework": false,
+      "include_in_image": false,
+      "write_by_framework": false,
+      "preserve_existing_regions": true
+    },
+    "partition_table": "mbr",
+    "protected_prefix_bytes": 104857600,
+    "raw_layout_status": "source_verified_hardware_pending",
+    "flash_workflow": {
+      "tool": "USB Burning Tool 2.2.4 native full-image container",
+      "delivery": "single_emmc_boot_rescue_img_with_factory_rootfs_archive",
+      "sata_partitioning_stage": "local_install"
+    },
+    "secure_boot_state": "vendor_signed_fip_required"
+  },
+  "armbian_board": "wxy-oesp-v22",
+  "backend_files": {
+    "armbian-v25-08": [
+      {
+        "source": "adapters/boards/wxy-oesp-v22/armbian/wxy-oesp-v22.csc",
+        "destination": "config/boards/wxy-oesp-v22.csc"
+      }
+    ]
+  },
+  "workload_overlays": {
+    "k3s": "adapters/boards/wxy-oesp-v22/rootfs-overlay",
+    "none": "adapters/boards/wxy-oesp-v22/rootfs-overlay"
+  },
+  "inputs": [
+    {
+      "id": "board-dts",
+      "path": "adapters/boards/wxy-oesp-v22/dts/meson-g12b-s922x-armhpc-oes1plus-v22.dts",
+      "sha256": "799ff68039c38aa430c11e4b2021bb6f82d9e5d33e12761533d5a13fddebaf96",
+      "stage_as": "dts/meson-g12b-s922x-armhpc-oes1plus-v22.dts",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "wxy-oesp-v22",
+      "path": "adapters/boards/wxy-oesp-v22/armbian/wxy-oesp-v22.csc",
+      "sha256": "a80d385a3c46e63bcc37e7d7e23693a500d407a197319b3be0e5cfa83be05411",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "amlogic-legacy-text-offset-pcie",
+      "path": "adapters/boards/wxy-oesp-v22/patches/amlogic-legacy-text-offset-pcie.patch",
+      "sha256": "7cc587bc65e8f31ad6f26088099ef137a3ea5433cb5e98d6de56591db086f963",
+      "acquire": {
+        "type": "repository"
+      }
+    },
+    {
+      "id": "dwmac-meson8b",
+      "path": "adapters/boards/wxy-oesp-v22/patches/dwmac-meson8b.c",
+      "sha256": "9835fca5322b1808fdeb3bb17a442bd77f30ffd51d7cc26d695033ab32bf32dc",
+      "acquire": {
+        "type": "repository"
+      }
+    }
+  ],
+  "kernel_requirements": {
+    "CONFIG_GPIO_SYSFS": [
+      "y"
+    ],
+    "CONFIG_SENSORS_GPIO_FAN": [
+      "y"
+    ],
+    "CONFIG_REALTEK_PHY": [
+      "y"
+    ],
+    "CONFIG_USB_RTL8152": [
+      "y",
+      "m"
+    ]
+  },
+  "firmware": [
+    {
+      "id": "rtl8153b-2",
+      "path": "cache/firmware/wxy-oesp-v22/rtl8153b-2.fw",
+      "sha256": "8e944ce86e2be0c0ae670996f63302a9ae36394baf2d5b9d2fefb248650ba6e0",
+      "destination": "/lib/firmware/rtl_nic/rtl8153b-2.fw",
+      "license": "LicenseRef-Realtek-Firmware",
+      "license_file": "adapters/boards/wxy-oesp-v22/licenses/LICENCE.rtlwifi_firmware.txt",
+      "redistributable": true,
+      "reviewed": true,
+      "acquire": {
+        "type": "https",
+        "url": "https://gitlab.com/kernel-firmware/linux-firmware/-/raw/20230210/rtl_nic/rtl8153b-2.fw"
+      }
+    }
+  ],
+  "blockers": [],
+  "validation_todo": [
+    "NET0 green LED output mapping",
+    "NET0 bidirectional throughput",
+    "NET1 USB bus speed",
+    "fan GPIO/polarity",
+    "SATA ports",
+    "boot and OTA recovery"
+  ],
+  "provenance": {
+    "dts_commit": "a6ab4bc106b5f65d6a3ecf577bf08d96ab4dced1",
+    "dts_url": "https://github.com/ophub/linux-6.12.y",
+    "license": "GPL-2.0-or-later OR MIT"
+  }
+}

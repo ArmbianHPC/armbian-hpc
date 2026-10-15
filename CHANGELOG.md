@@ -1,3 +1,28 @@
+# v1.2.0
+
+
+- Add OES1PLUS v2.2 integration with dual Ethernet, SATA, status lights, port identification and fan control.
+- Update OECT and OESP system components, Rescue A/B, configuration retention and recovery handling.
+- Add explicit fixed-BOOT software refresh and complete multi-board release packaging.
+
+# v1.1.4
+
+Package the OESP storage binding correction with the existing fixed BOOT pair and native cable-flash workflow.
+
+# v1.1.3
+
+Package the OESP recovery revision with the existing fixed BOOT pair and updated runtime.
+
+# v1.1.2
+
+Allow a signed retained Rescue to start from RAM when BOOT cannot mount. Package the pinned USB loader and bounded recovery transport.
+
+# v1.1.1
+
+- Add OESP performance policy retry and reviewed RTL8153B firmware assembly.
+- Integrate optional USB console support and shared command/runtime resources.
+- Extend paired BOOT, DTB and normal-system maintenance with rollback protection.
+
 # v1.1.0
 
 - Add persistent normal-system hostnames and guided network configuration with confirmation and rollback.

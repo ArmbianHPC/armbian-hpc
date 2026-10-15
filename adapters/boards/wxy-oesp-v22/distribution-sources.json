@@ -1,0 +1,18 @@
+{
+  "board": "wxy-oesp-v22",
+  "permanent_boot": [
+    {
+      "role": "vendor-signed-fip",
+      "sha256": "2e28a6d05bcda412195d4991beba403cc6fe6859d7770ebead91a34990c48fde",
+      "size_bytes": 2097152,
+      "source": "https://github.com/retro98boy/onethingcloud-oes-linux/releases/tag/v2025.08.09",
+      "source_archive": "onethingcloud-oes-plus-skeleton.tar.gz",
+      "redistribution_reviewed": false,
+      "license_status": "No redistribution permission found in the source repository; operator has no additional authorization."
+    }
+  ],
+  "image_redistribution": {
+    "reviewed": false,
+    "reason": "Vendor FIP permission and exact corresponding sources remain unresolved."
+  }
+}

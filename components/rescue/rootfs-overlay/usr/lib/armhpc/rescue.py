@@ -52,6 +52,7 @@ def load_policy():
 
 
 def assert_rescue(policy):
+    require(not Path('/run/armhpc-install-medium').exists(), 'USB commissioning media cannot deploy SATA partitions.')
     require(os.geteuid() == 0 and sys.platform == 'linux', 'Run as root in the independent Rescue.')
     require(Path('/etc/armhpc/rescue-environment').is_file(), 'This command requires the Rescue environment.')
     filesystem = json.loads(run('findmnt', '--json', '--mountpoint', '/', '-o', 'SOURCE,FSTYPE', capture=True))['filesystems'][0]
@@ -76,7 +77,7 @@ def check_factory(policy):
         require(file_hash(FACTORY / name) == manifest['files'][name]['sha256'], 'Factory archive checksum mismatch: ' + name)
     boot = Path('/boot')
     mounted = json.loads(run('findmnt', '--json', '--mountpoint', boot, '-o', 'SOURCE,FSTYPE,OPTIONS', capture=True))['filesystems'][0]
-    require(mounted['fstype'] == 'ext4' and 'ro' in mounted['options'].split(','), 'The eMMC BOOT filesystem must be mounted read only.')
+    require(mounted['fstype'] == policy.get('boot_fstype','ext4') and 'ro' in mounted['options'].split(','), 'The eMMC BOOT filesystem must be mounted read only.')
     require(run('blkid', '-s', 'LABEL', '-o', 'value', mounted['source'], capture=True) == policy['boot_label'], 'Wrong BOOT filesystem.')
     for relative, digest in manifest['boot_files'].items():
         require(file_hash(boot / relative) == digest, 'BOOT files do not match the factory: ' + relative)
@@ -94,14 +95,15 @@ def disk_info(device):
     require(stat.S_ISBLK(path.stat().st_mode), 'Select a block device, not a file.')
     # Without NAME or --tree, lsblk JSON places partitions beside their disk.
     # Request the hierarchy explicitly so children are checked before writing.
-    items = json.loads(run('lsblk', '--json', '--tree', '--bytes', '--output', 'NAME,PATH,TYPE,SIZE,MODEL,SERIAL,TRAN,MAJ:MIN,MOUNTPOINTS', path, capture=True))['blockdevices']
+    items = json.loads(run('lsblk', '--json', '--tree', '--bytes', '--output', 'NAME,PATH,TYPE,SIZE,MODEL,SERIAL,WWN,TRAN,MAJ:MIN,MOUNTPOINTS', path, capture=True))['blockdevices']
     require(len(items) == 1, 'Ambiguous target disk.')
     info = items[0]
     require(info.get('path') == str(path), 'Target disk identity does not match its resolved path.')
     require(info['type'] == 'disk' and info['tran'] == 'sata', 'Select a whole SATA disk. eMMC, USB, partitions and loop devices are refused.')
     require(run('blockdev', '--getss', path, capture=True) == '512', 'This installer requires 512-byte logical sectors.')
     serial = (info.get('serial') or '').strip()
-    require(serial and re.fullmatch(r'[A-Za-z0-9_.:+ -]+', serial), 'Disk must have a readable serial number.')
+    wwn = (info.get('wwn') or '').strip()
+    require((serial or wwn) and all(not value or re.fullmatch(r'[A-Za-z0-9_.:+ -]+', value) for value in (serial,wwn)), 'Disk must have a readable serial number or WWN.')
     def walk(node):
         require(not any(node.get('mountpoints') or []), 'Target disk or a child is mounted.')
         for child in node.get('children', []):
@@ -128,11 +130,11 @@ def disk_info(device):
             yield from descendants(child)
     nodes = list(descendants(info))
     require(all(not any((Path('/sys/dev/block') / node['maj:min'] / 'holders').iterdir()) for node in nodes), 'Target is in use by a mapped block device.')
-    return {'path': str(path), 'size': int(info['size']), 'serial': serial, 'number': target_number, 'model': info['model']}
+    return {'path': str(path), 'size': int(info['size']), 'serial': serial, 'wwn':wwn, 'number': target_number, 'model': info['model']}
 
 
 def identity(disk):
-    return tuple(disk[key] for key in ('path', 'size', 'serial', 'number'))
+    return tuple(disk.get(key) for key in ('path', 'size', 'serial', 'wwn', 'number'))
 
 
 def partitions(device):

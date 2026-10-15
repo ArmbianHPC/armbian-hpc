@@ -7,7 +7,13 @@ SPDX-FileCopyrightText = "2026 ARMHPC contributors"
 SPDX-License-Identifier = "GPL-2.0-only"
 
 [[annotations]]
-path = ["framework/*.py", "components/**/usr/lib/armhpc/*.py", "adapters/boards/**/usr/lib/armhpc/*.py", "tools/build/rootfs.py", "tools/build/prepare-oect-*.py", "tools/build/assemble-oect-squashfs.py"]
+path = ["framework/*.py", "components/**/usr/lib/armhpc/*.py", "adapters/boards/**/usr/lib/armhpc/*.py", "tools/build/rootfs.py", "tools/build/prepare-oect-*.py", "tools/build/assemble-oect-squashfs.py", "tools/build/prepare-oesp-rootfs.py", "tools/build/assemble-oesp-squashfs.py", "tools/oesp-usb-install.py", "docs/OESP*.md"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 ARMHPC contributors"
 SPDX-License-Identifier = "GPL-2.0-only OR GPL-3.0-only"
+
+[[annotations]]
+path = ["adapters/boards/wxy-oesp-v22/licenses/LICENCE.rtlwifi_firmware.txt", "LICENSES/LicenseRef-Realtek-Firmware.txt"]
+precedence = "override"
+SPDX-FileCopyrightText = "2010 Realtek Semiconductor Corporation"
+SPDX-License-Identifier = "LicenseRef-Realtek-Firmware"

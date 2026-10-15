@@ -1,0 +1,86 @@
+{
+  "permanent_boot": [
+    {
+      "role": "idbloader",
+      "offset_bytes": 32768,
+      "size_bytes": 317440,
+      "sha256": "41817f78b1ddbb437394a4f37115dcd53af6c205160b8a8e6da900228a34660b",
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    },
+    {
+      "role": "idbloader",
+      "offset_bytes": 557056,
+      "size_bytes": 317440,
+      "sha256": "41817f78b1ddbb437394a4f37115dcd53af6c205160b8a8e6da900228a34660b",
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    },
+    {
+      "role": "idbloader",
+      "offset_bytes": 1081344,
+      "size_bytes": 317440,
+      "sha256": "41817f78b1ddbb437394a4f37115dcd53af6c205160b8a8e6da900228a34660b",
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    },
+    {
+      "role": "idbloader",
+      "offset_bytes": 1605632,
+      "size_bytes": 317440,
+      "sha256": "41817f78b1ddbb437394a4f37115dcd53af6c205160b8a8e6da900228a34660b",
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    },
+    {
+      "role": "idbloader",
+      "offset_bytes": 2129920,
+      "size_bytes": 317440,
+      "sha256": "41817f78b1ddbb437394a4f37115dcd53af6c205160b8a8e6da900228a34660b",
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    },
+    {
+      "role": "uboot",
+      "offset_bytes": 8388608,
+      "size_bytes": 2097152,
+      "sha256": "8bf579bb63ce5bd33835adade7a02e1f50ffe415afccc866a99c62548697eab5",
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    },
+    {
+      "role": "uboot",
+      "offset_bytes": 10485760,
+      "size_bytes": 2097152,
+      "sha256": "8bf579bb63ce5bd33835adade7a02e1f50ffe415afccc866a99c62548697eab5",
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    },
+    {
+      "id": "oect-boot-environment",
+      "role": "boot-environment",
+      "offset_bytes": 150994944,
+      "size_bytes": 131072,
+      "sha256": "b83a4fa7cf0f537268d88cd5be24920fcfd97e08616181fa9a6d03151614f161",
+      "source": {
+        "url": "https://github.com/ophub/u-boot/blob/79577c51da4fafb53a91b6482daafd356aba05ac/u-boot/rockchip/wxy-oect/env.bin",
+        "commit": "79577c51da4fafb53a91b6482daafd356aba05ac",
+        "git_blob": "a9501ce0df2885bedce56c13b4936875348fb684",
+        "matches_user_reference_image": true,
+        "reference_image_sha256": "216e5be56113ceba6ca1835a050bb74b3674e7d9605db08645f924f1b7c05aab",
+        "redistribution_reviewed": false
+      },
+      "redistribution_reviewed": false,
+      "source_status": "matching vendor build configuration and corresponding source not established"
+    }
+  ],
+  "board": "wxy-oect-original",
+  "image_redistribution": {
+    "reviewed": false,
+    "reason": "The Rockchip rkbin grant does not identify the corresponding source/configuration of this vendor U-Boot build.",
+    "references": [
+      "https://github.com/rockchip-linux/rkbin/blob/master/LICENSE",
+      "https://github.com/rockchip-linux/u-boot"
+    ]
+  }
+}
