@@ -8,6 +8,12 @@ import sys
 LIBRARY=Path(__file__).resolve().parent
 RESCUE_MARKER=Path('/etc/armhpc/rescue-environment')
 NORMAL={
+    'firewall':('firewall_config.py','按节点角色预览防火墙，应用后由新 SSH 会话确认。'),
+    'resources':('resource_config.py','根据实际内存和节点角色预览、设置 kubelet 资源预留。'),
+    'swap':('swap_config.py','预览和设置 DATA 加密 swap 配置档。'),
+    'health':('host_health.py','查询本机健康、内核能力和采集状态。'),
+    'auth':('auth_config.py','管理普通系统密码、公钥和 SSH 认证确认事务。'),
+    'state':('node_state.py','查看、登记和恢复持久节点资源。'),
     'fan':('fan.py','查看风扇和温度，设置自动、开启或关闭模式。'),
     'hostname':('hostname_config.py','查看、修改普通系统主机名，或打开主机名向导。'),
     'network':('network_config.py','查看网络，配置 DHCP、静态 IPv4、网关和 DNS；超时未确认自动回滚。'),
@@ -21,6 +27,7 @@ NORMAL={
     'rescue':('rescue_boot.py','请求下一次进入 Rescue；--reboot 立即重启，--cancel 取消。'),
 }
 KUBE={
+    'registry':('kube_registry.py','导入带 CA、认证和明确回退策略的容器镜像源配置。'),
     'configuration':('kube_setup.py','联网安装、创建或加入 K3s 集群，修复或重试配置。'),
     'check':('kube_check.py','检查 K3s 数据挂载、绑定目录和安装状态。'),
     'uninstall':('kube_manage.py','归档此节点 K3s 数据并卸载，清除安装向导记录。'),
@@ -28,6 +35,7 @@ KUBE={
     'clear':('kube_manage.py','清理未完成安装及半成品数据，拒绝清理已安装节点。'),
 }
 RESCUE={
+    'health':('host_health.py','查询救援环境健康和内核能力。'),
     'emmc':('emmc.py','创建私有 eMMC 备份并安装签名的完整 OESP 镜像。'),
     'fan':('fan.py','查看风扇和温度，设置自动、开启或关闭模式。'),
     'identify':('net_identify.py','规律闪烁网口绿灯以定位设备，结束或停止后恢复原灯态。'),

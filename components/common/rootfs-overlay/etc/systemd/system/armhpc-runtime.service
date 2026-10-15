@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+[Unit]
+Description=Prepare registered ARMHPC service runtime files
+Requires=armhpc-state.service
+After=armhpc-state.service
+Before=k3s.service k3s-agent.service
+ConditionPathExists=!/etc/armhpc/rescue-environment
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/node_state.py _runtime
+RemainAfterExit=yes
+TimeoutStartSec=15
+
+[Install]
+WantedBy=multi-user.target

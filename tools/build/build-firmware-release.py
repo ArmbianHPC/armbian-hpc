@@ -43,10 +43,16 @@ def build(config):
                            stdout=log, stderr=subprocess.STDOUT)
 
     run('prepare-firmware-inputs.py', '--project', project)
-    run('refresh-fixed-boot-roots.py', '--project', project, '--ota-source', ota,
+    prepare='rebase-kernel-roots.py' if cfg.get('kernel_work') else 'refresh-fixed-boot-roots.py'
+    kernel_arguments=['--kernel-work',cfg['kernel_work']] if cfg.get('kernel_work') else []
+    if cfg.get('resume_roots'):
+        if not cfg.get('kernel_work'):raise ValueError('Only rebuilt-kernel roots support guarded resume')
+        kernel_arguments.append('--resume')
+    if cfg.get('apt_proxy'):kernel_arguments+=['--apt-proxy',cfg['apt_proxy']]
+    run(prepare, '--project', project, '--ota-source', ota,
         '--input-roots', cfg['input_roots'], '--boot-manifest', cfg['boot_manifest'],
         '--work', work, '--watchdog-binary', cfg['watchdog_binary'], '--board', cfg['board'],
-        '--release', cfg['release'], '--epoch', cfg['epoch'])
+        '--release', cfg['release'], '--epoch', cfg['epoch'],*kernel_arguments)
     provenance = json.loads(Path(cfg['provenance']).read_text())
     refs = {repo.name: subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()
             for repo in (project, ota)}
@@ -75,6 +81,28 @@ def build(config):
     run('prepare-firmware-package.py', '--project', project, '--ota-source', ota,
         '--manifest', manifest, '--artifacts', firmware / 'ota', '--trust', trust,
         '--roots', work, '--source-manifest', cfg['source_manifest'], '--provenance', cfg['provenance'], '--output', package)
+    if cfg.get('kernel_work'):
+        sys.path.insert(0,str(ota/'src'))
+        from armhpc_ota.boot_publish import build as boot_bundle
+        signed=json.loads(manifest.read_text())['payload']
+        def artifact(role):
+            item=next(a for a in signed['artifacts'] if a['role']==role)
+            return firmware/'ota'/item['url'].rsplit('/',1)[-1]
+        boot_bundle(manifest,artifact('rescue-rootfs'),artifact('rescue-kernel'),artifact('rescue-dtb'),
+                    artifact('rescue-initramfs'),work/'boot/recovery-initramfs',
+                    package/'firmware/boot-update.tar.xz',cfg['signing_key'],cfg['key_id'],trust,
+                    cfg['sequence'],work/'boot/recovery-kernel',work/'boot/recovery-dtb',
+                    system_rootfs=artifact('system-rootfs'),purpose='firmware-update')
+        (package/'README.md').write_text('# ARMHPC firmware OTA\n\n[简体中文](README.zh-CN.md)\n\n'
+            'Import this archive in the matching controller and select all. Install the supplied maintenance package first. '
+            'The controller exports a verified private BOOT recovery backup before switching kernels, then updates paired '
+            'Rescue and SATA system resources under one persistent task. Retain that backup until acceptance. '
+            'Read the upgrade and rollback guide before starting.\n')
+        (package/'README.zh-CN.md').write_text('# ARMHPC 固件 OTA\n\n'
+            '在配套上位机导入本包并选择 all，先安装随附维护包。上位机先导出已核验的本机私有 BOOT 恢复备份，'
+            '再以同一持久任务更新配套内核、Rescue 和 SATA 普通系统。验收前保留备份，并先阅读升级与回滚说明。\n')
+        (package/'SHA256SUMS').write_text(''.join(sha(p)+'  '+p.relative_to(package).as_posix()+'\n'
+            for p in sorted(package.rglob('*')) if p.is_file() and p.name!='SHA256SUMS'))
     image = firmware / (cfg['stem'] + '.img')
     destination = firmware
     extra = []

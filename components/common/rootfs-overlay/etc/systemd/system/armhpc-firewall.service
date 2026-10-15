@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+[Unit]
+Description=Restore the explicitly configured ARMHPC host firewall
+DefaultDependencies=no
+After=local-fs.target armhpc-firstboot.service
+Before=network-pre.target shutdown.target
+Wants=network-pre.target
+Conflicts=shutdown.target
+ConditionPathExists=!/etc/armhpc/rescue-environment
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/firewall_config.py _boot
+TimeoutStartSec=15
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

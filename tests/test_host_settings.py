@@ -249,12 +249,16 @@ class HostSettingsTests(unittest.TestCase):
         self.assertEqual(self.net.choose_interface('eth1'), 'eth1')
 
     def test_guide_collects_dhcp_or_static_settings(self):
-        with mock.patch.object(sys.stdin, 'isatty', return_value=True), mock.patch('builtins.input', side_effect=['', '']):
-            self.assertEqual(network.wizard(self.net)['method'], 'dhcp')
-        with mock.patch.object(sys.stdin, 'isatty', return_value=True), mock.patch('builtins.input', side_effect=['static', '192.168.1.9/24', '192.168.1.1', '1.1.1.1,8.8.8.8']):
+        with mock.patch.object(sys.stdin, 'isatty', return_value=True), mock.patch('builtins.input', side_effect=['']*7):
+            value=network.wizard(self.net)
+            self.assertEqual(value['method'], 'dhcp')
+            self.assertTrue(value['policy']['management'])
+            self.assertEqual(value['policy']['family'],'ipv4')
+        with mock.patch.object(sys.stdin, 'isatty', return_value=True), mock.patch('builtins.input', side_effect=['static', '192.168.1.9/24', '192.168.1.1', '1.1.1.1,8.8.8.8','','','192.168.1.10','80','','y','200','192.168.1.9/32']):
             value = network.wizard(self.net)
         self.assertEqual(value['address'], '192.168.1.9/24')
         self.assertEqual(value['dns'], ['1.1.1.1', '8.8.8.8'])
+        self.assertEqual(value['policy']['route_table'],200)
 
     def test_configuration_and_ota_share_the_same_writer_lock(self):
         with config_io.configuration_lock(self.root), self.assertRaises(config_io.ConfigError):

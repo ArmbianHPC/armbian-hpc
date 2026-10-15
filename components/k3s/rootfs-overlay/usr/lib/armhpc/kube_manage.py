@@ -237,6 +237,17 @@ class Manager:
             rows.append(row)
         atomic(path, '\n'.join(rows) + '\n', path.stat().st_mode & 0o777)
 
+    def remove_recovery_intent(self,task):
+        path=self.path(self.policy['data_mountpoint']+'/node-config/armhpc/state.json')
+        value=read(path)
+        if value is None:return
+        require(value.get('schema_version')==1 and isinstance(value.get('services'),dict),
+                'recovery_catalog','Unsupported service recovery catalog')
+        backup=Path(task['backup'])/'node-recovery-state.json'
+        if not backup.exists():save(backup,value)
+        for unit in ('k3s.service','k3s-agent.service'):value['services'].pop(unit,None)
+        save(path,value)
+
     def execute(self, plan):
         task = read(self.task_file)
         if task and task.get('stage') == 'incomplete':
@@ -274,6 +285,9 @@ class Manager:
             if 'snapshot' not in task['completed']:
                 self.snapshot(task)
                 self.checkpoint(task, 'snapshot')
+            if 'recovery-unregistered' not in task['completed']:
+                self.remove_recovery_intent(task)
+                self.checkpoint(task,'recovery-unregistered')
             self.archive_data(task)
             for name in ('k3s-agent-uninstall.sh', 'k3s-uninstall.sh'):
                 step = 'uninstalled:' + name
@@ -290,7 +304,7 @@ class Manager:
             require(not self.path('/usr/local/bin/k3s').exists(), 'uninstall', 'K3s binary remains; inspect the backed-up uninstall scripts')
             self.clear_bind_entries()
             for relative in ('/etc/systemd/system/k3s.service.d', '/etc/systemd/system/k3s-agent.service.d',
-                             '/etc/rancher/node', '/etc/sysctl.d/90-k3s.conf', self.policy['completion_marker']):
+                             '/etc/rancher/node', '/etc/sysctl.d/90-k3s.conf','/etc/modules-load.d/90-k3s.conf', self.policy['completion_marker']):
                 path = self.path(relative)
                 if path.is_dir():
                     shutil.rmtree(path)

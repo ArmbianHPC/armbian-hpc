@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ArmbianHPC/armhpc-ota
-          ref: 7709bb1a01cad3fb19eff6b6e2045c8539d45ecd
+          ref: 39ffe15884fa308d09b413ad854ece2468865a70
           path: armhpc-ota
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -61,7 +61,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ArmbianHPC/armhpc-ota
-          ref: 7709bb1a01cad3fb19eff6b6e2045c8539d45ecd
+          ref: 39ffe15884fa308d09b413ad854ece2468865a70
           path: armhpc-ota
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

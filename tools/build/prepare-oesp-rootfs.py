@@ -45,7 +45,7 @@ def main():
             'e2fsprogs','zstd','tar','acl','attr','fdisk','gdisk','chrony','iproute2','iputils-ping','ethtool','usbutils','pciutils',
             'initramfs-tools','busybox','kexec-tools','rsync','curl','iptables','nftables','conntrack','socat','dosfstools',
             'unzip','xz-utils','cpio','systemd-resolved','dbus','locales','less','bash-completion','kmod','procps',
-            'u-boot-tools']
+            'u-boot-tools','python3-yaml','cryptsetup','ipset']
         run('chroot',base,'env','DEBIAN_FRONTEND=noninteractive','apt-get','install','-y','--no-install-recommends',*packages)
         run('chroot',base,'apt-get','clean')
         save(work/'base-ready.json',{'distribution':'bookworm','architecture':'arm64','packages':packages})
@@ -113,6 +113,10 @@ def main():
         run('systemctl','--root='+str(root),'enable','systemd-networkd.service','systemd-resolved.service','chrony.service','ssh.service','armhpc-firstboot.service',
             'armhpc-clock-floor.service','armhpc-clock-checkpoint.timer','armhpc-clock-shutdown.service','armhpc-phy-leds.service','armhpc-fan.service','armhpc-led.service',
             'armhpc-performance.service','armhpc-performance.timer')
+        units=['armhpc-management-ready.service','armhpc-health.timer']
+        if role=='system':units+=['armhpc-state.service','armhpc-runtime.service','armhpc-swap.service','armhpc-auth-recovery.service','armhpc-firewall.service']
+        run('systemctl','--root='+str(root),'disable','systemd-networkd-wait-online.service')
+        run('systemctl','--root='+str(root),'enable',*units)
         resolv=root/'etc/resolv.conf';resolv.unlink();resolv.symlink_to('/run/systemd/resolve/stub-resolv.conf')
         roots.append(root)
         if role=='rescue':

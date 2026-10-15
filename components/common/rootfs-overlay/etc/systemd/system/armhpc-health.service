@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+[Unit]
+Description=Collect local ARMHPC host health
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/host_health.py collect --quiet
+TimeoutStartSec=15
+Nice=10
+IOSchedulingClass=idle

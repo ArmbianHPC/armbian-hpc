@@ -12,11 +12,15 @@ import runpy
 import shutil
 import subprocess
 import sys
+import tempfile
 from types import SimpleNamespace
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0,str(ROOT/'components/common/rootfs-overlay/usr/lib/armhpc'))
+sys.path.insert(0,str(ROOT/'components/k3s/rootfs-overlay/usr/lib/armhpc'))
+import kube_runtime
 from framework.config import ARCHITECTURES, resolve
 
 OVERLAY = ROOT / 'components/common/rootfs-overlay'
@@ -66,12 +70,12 @@ def verify_inputs(setup):
 def verify_wizard(setup):
     plans = []
     for role, expected in [('1', 'server-single'), ('2', 'server-init'), ('3', 'agent'), ('4', 'server-join')]:
-        answers = [role, 'oect-test', '']
+        answers = [role, 'oect-test', POLICY['default_version']]
         if role in ('3', '4'):
             answers.append('https://server.lan:6443')
         if role != '3':
             answers += [''] * 7
-        answers += ['1', 'n']
+        answers += ['1', 'n', 'n', 'n']
         output = io.StringIO()
         with mock.patch('builtins.input', side_effect=answers), mock.patch.object(setup['getpass'], 'getpass', return_value=TEST_TOKEN), contextlib.redirect_stdout(output):
             plan, token = setup['collect_plan'](POLICY)
@@ -111,6 +115,9 @@ def verify_online_pipeline(setup, plan, policy=POLICY):
             'prepare_storage': lambda policy, value: 'k3s',
             'download_installer': lambda policy, path: None,
             'run': fake_run,
+            'management_status':lambda:{'ready':False},
+            'prepare_recovery_resources':lambda *args:{'version':plan['version']},
+            'capture_installation':lambda *args:None,
         }
         with mock.patch.dict(setup, patches), mock.patch.object(setup['tempfile'], 'TemporaryDirectory', return_value=contextlib.nullcontext(str(ROOT))), contextlib.redirect_stdout(io.StringIO()):
             try:
@@ -118,20 +125,21 @@ def verify_online_pipeline(setup, plan, policy=POLICY):
             except setup['SetupError']:
                 require(fail_installer or fail_service, 'Unexpected pipeline failure.')
         marked = any(path == policy['completion_marker'] for path, _ in writes)
+        transitions=[value for i,value in enumerate(states) if not i or value!=states[i-1]]
         if fail_installer:
-            require(states == ['installing'] and not marked, 'Failed installer marked setup complete.')
+            require(transitions == ['installing'] and not marked, 'Failed installer marked setup complete.')
             require(not any(args[0] == 'systemctl' for args, _ in commands), 'Failed installer started K3s.')
         elif fail_service:
-            require(states == ['installing', 'starting'] and not marked, 'Failed service marked setup complete.')
+            require(transitions == ['installing', 'starting'] and not marked, 'Failed service marked setup complete.')
         else:
-            require(states == ['installing', 'starting', 'installed'] and marked, 'Completion occurred before service checks.')
+            require(transitions == ['installing', 'starting', 'installed'] and marked, 'Completion occurred before service checks.')
             installer_calls = [kwargs for args, kwargs in commands if args[0] == 'sh']
             environment = installer_calls[0]['env']
             require(environment['INSTALL_K3S_VERSION'] == policy['default_version'], 'Version is not pinned.')
             require(environment['INSTALL_K3S_SKIP_START'] == 'true', 'Installer bypasses the storage gate.')
             require(environment['ARCH'] == policy['installer_arch'], 'Installer architecture is not selected by the target.')
             require(environment['INSTALL_K3S_ARTIFACT_URL'] == plan['download_source']['artifact_url'], 'Selected release source was lost.')
-            require('INSTALL_K3S_SKIP_DOWNLOAD' not in environment, 'Online setup uses offline installation.')
+            require(environment['INSTALL_K3S_SKIP_DOWNLOAD']=='true','Verified cached programs must be installed without an additional download.')
 
 
 def verify_preflight():
@@ -148,12 +156,12 @@ def verify_preflight():
         ('/data ext4 OECT_DATA', 0, True, 'installing', False),
     ]
     for mount, mount_code, same, status, expected in cases:
-        def fake_path(path):
+        def fake_path(path,*parts):
             value = POLICY if path == '/etc/image-framework/k3s.json' else {'status': status}
             return SimpleNamespace(read_text=lambda: json.dumps(value))
 
         accepted = True
-        with mock.patch.dict(gate, {'Path': fake_path}), mock.patch.object(gate['subprocess'], 'check_output', return_value=mount), mock.patch.object(gate['subprocess'], 'run', return_value=SimpleNamespace(returncode=mount_code)), mock.patch.object(gate['os'].path, 'samefile', return_value=same):
+        with node_checks(),mock.patch.dict(gate, {'Path': fake_path}), mock.patch.object(gate['subprocess'], 'check_output', return_value=mount), mock.patch.object(gate['subprocess'], 'run', return_value=SimpleNamespace(returncode=mount_code)), mock.patch.object(gate['os'].path, 'samefile', return_value=same):
             try:
                 gate['main']()
             except RuntimeError:
@@ -167,28 +175,24 @@ def verify_script_pin(setup):
     policy = dict(POLICY, installer_sha256=hashlib.sha256(content).hexdigest())
     response = io.BytesIO(content)
     response.geturl = lambda: policy['installer_url']
-    fake_target = SimpleNamespace(open=lambda mode: io.BytesIO())
-    with mock.patch.dict(setup, {'Path': lambda value: fake_target}), mock.patch.object(setup['urllib'].request, 'urlopen', return_value=response):
-        setup['download_installer'](policy, 'memory-only')
-    altered = io.BytesIO(b'altered installer')
-    altered.geturl = lambda: policy['installer_url']
-    with mock.patch.dict(setup, {'Path': lambda value: fake_target}), mock.patch.object(setup['urllib'].request, 'urlopen', return_value=altered):
-        try:
-            setup['download_installer'](policy, 'memory-only')
-        except setup['SetupError']:
-            pass
-        else:
-            raise AssertionError('Altered installer passed checksum verification.')
-    insecure = io.BytesIO(content)
-    insecure.geturl = lambda: 'http://mirror.example/install.sh'
-    with mock.patch.dict(setup, {'Path': lambda value: fake_target}), mock.patch.object(setup['urllib'].request, 'urlopen', return_value=insecure):
-        expect_rejection(lambda _: setup['download_installer'](policy, 'memory-only'), None)
+    with tempfile.TemporaryDirectory() as folder:
+        target=Path(folder)/'install.sh'
+        with mock.patch.object(setup['urllib'].request,'urlopen',return_value=response):
+            setup['download_installer'](policy,target)
+        require(target.read_bytes()==content,'Pinned installer was not atomically saved')
+        altered=io.BytesIO(b'altered installer');altered.geturl=lambda:policy['installer_url']
+        with mock.patch.object(setup['urllib'].request,'urlopen',return_value=altered):
+            expect_rejection(lambda _:setup['download_installer'](policy,target),None)
+        require(target.read_bytes()==content,'Rejected installer replaced the verified cache')
+        insecure=io.BytesIO(content);insecure.geturl=lambda:'http://mirror.example/install.sh'
+        with mock.patch.object(setup['urllib'].request,'urlopen',return_value=insecure):
+            expect_rejection(lambda _:setup['download_installer'](policy,target),None)
 
 
 def verify_mirror_selection(setup, base_plan):
     answers = ['2', 'https://mirror.example/k3s/install.sh',
                'https://mirror.example/k3s/releases/download', 'y', 'docker.io,registry.k8s.io',
-               'https://docker.example', 'https://registry.example']
+               'https://docker.example', 'https://registry.example','n','n']
     with mock.patch('builtins.input', side_effect=answers), contextlib.redirect_stdout(io.StringIO()):
         source = setup['collect_download_source'](POLICY)
     plan = dict(base_plan, download_source=source)
@@ -202,7 +206,8 @@ def verify_mirror_selection(setup, base_plan):
         downloads.append(policy)
     patches = {'save_state': lambda *args: None, 'private_write': lambda *args: None,
                'prepare_storage': lambda *args: 'k3s', 'run': lambda *args, **kwargs: 'active',
-               'download_installer': fake_download}
+               'download_installer': fake_download,'management_status':lambda:{'ready':False},
+               'prepare_recovery_resources':lambda *args:{'version':plan['version']},'capture_installation':lambda *args:None}
     with mock.patch.dict(setup, patches), mock.patch.object(setup['tempfile'], 'TemporaryDirectory', return_value=contextlib.nullcontext(str(ROOT))), contextlib.redirect_stdout(io.StringIO()):
         setup['install'](POLICY, {'plan': plan}, None)
     require(downloads[0]['installer_url'] == source['installer_url'], 'Selected script source was lost.')
@@ -242,7 +247,7 @@ def verify_architectures(setup):
                 return 'ext4'
             require(args[3] == '/srv/persistent', 'Host guard uses a fixed data mountpoint.')
             return '/srv/persistent ext4 NODE_DATA'
-        with mock.patch.dict(setup, {'Path': fake_path, 'run': fake_run}), mock.patch.object(setup['sys'], 'platform', 'linux'), mock.patch.object(setup['platform'], 'machine', return_value=machine), mock.patch.object(setup['shutil'], 'which', return_value='/test/command'):
+        with node_checks(),mock.patch.dict(setup, {'Path': fake_path, 'run': fake_run}), mock.patch.object(setup['sys'], 'platform', 'linux'), mock.patch.object(setup['platform'], 'machine', return_value=machine), mock.patch.object(setup['shutil'], 'which', return_value='/test/command'):
             setup['check_host'](policy)
             other = 'armhf' if arch == 'arm64' else 'arm64'
             expect_rejection(setup['check_host'], dict(policy, runtime_machines=ARCHITECTURES[other]['runtime_machines']))
@@ -253,7 +258,7 @@ def verify_configurable_preflight():
     policy = dict(POLICY, data_mountpoint='/srv/persistent', data_label='NODE_DATA',
                   kubelet_source='/srv/persistent/kubelet', node_identity_source='/srv/persistent/node-config/k3s/node')
     commands, bindings = [], []
-    def fake_path(path):
+    def fake_path(path,*parts):
         value = policy if path == '/etc/image-framework/k3s.json' else {'status': 'installed'}
         return SimpleNamespace(read_text=lambda: json.dumps(value))
     def fake_check(args, **kwargs):
@@ -262,10 +267,17 @@ def verify_configurable_preflight():
     def fake_same(source, target):
         bindings.append((source, target))
         return True
-    with mock.patch.dict(gate, {'Path': fake_path}), mock.patch.object(gate['subprocess'], 'check_output', side_effect=fake_check), mock.patch.object(gate['subprocess'], 'run', return_value=SimpleNamespace(returncode=0)), mock.patch.object(gate['os'].path, 'samefile', side_effect=fake_same):
+    with node_checks(),mock.patch.dict(gate, {'Path': fake_path}), mock.patch.object(gate['subprocess'], 'check_output', side_effect=fake_check), mock.patch.object(gate['subprocess'], 'run', return_value=SimpleNamespace(returncode=0)), mock.patch.object(gate['os'].path, 'samefile', side_effect=fake_same):
         gate['main']()
     require(commands[0][3] == '/srv/persistent', 'Preflight uses a fixed data mountpoint.')
     require(bindings[0][0] == policy['kubelet_source'] and bindings[1][0] == policy['node_identity_source'], 'Preflight ignores target binding paths.')
+
+
+@contextlib.contextmanager
+def node_checks():
+    with mock.patch.multiple(kube_runtime,preflight=mock.Mock(return_value={}),
+            installed=mock.Mock(return_value={'ready':True}),check_configuration=mock.Mock(return_value={})):
+        yield
 
 
 def main():

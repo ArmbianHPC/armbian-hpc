@@ -2,6 +2,9 @@
 [Match]
 Name=eth1
 
+[Link]
+RequiredForOnline=no
+
 [Network]
 DHCP=yes
 IPv6AcceptRA=yes
@@ -10,4 +13,7 @@ IPv6AcceptRA=yes
 RouteMetric=200
 
 [IPv6AcceptRA]
+RouteMetric=200
+
+[DHCPv6]
 RouteMetric=200

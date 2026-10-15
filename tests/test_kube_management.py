@@ -88,6 +88,9 @@ class KubeManagementTests(unittest.TestCase):
         p.chmod(0o700 if p.name.endswith('.sh') else 0o600)
 
     def test_uninstall_archives_state_and_preserves_unrelated_data_identity_boot(self):
+        self.write('/data/node-config/armhpc/state.json',json.dumps({'schema_version':1,'data':{},
+            'services':{'k3s.service':{'enabled':True},'other.service':{'enabled':True}}}))
+        self.write('/var/lib/armhpc/auth/state.json','keep-authentication')
         result = self.manager.execute(self.manager.plan('uninstall', 'v1.37.1+k3s1'))
         backup = Path(result['backup'])
         self.assertEqual('completed', result['stage'])
@@ -105,6 +108,10 @@ class KubeManagementTests(unittest.TestCase):
         self.assertTrue(native)
         self.assertEqual({str(self.root / 'data/k3s')}, set(native))
         self.assertEqual(0o700, backup.stat().st_mode & 0o777)
+        catalog=json.loads((self.root/'data/node-config/armhpc/state.json').read_text())
+        self.assertEqual(set(catalog['services']),{'other.service'})
+        self.assertTrue((backup/'node-recovery-state.json').is_file())
+        self.assertEqual((self.root/'var/lib/armhpc/auth/state.json').read_text(),'keep-authentication')
 
     def test_clear_refuses_running_or_completed_installations(self):
         with self.assertRaisesRegex(manage.ManageError, 'unfinished'):

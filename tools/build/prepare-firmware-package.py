@@ -106,7 +106,7 @@ def prepare(project, ota_source, manifest, artifacts, trust, roots, source_manif
     inventory = {}
     for role in ('system', 'rescue'):
         root = roots / 'public' / role
-        rows = subprocess.check_output(['chroot', str(root), 'dpkg-query', '-W',
+        rows = subprocess.check_output(['dpkg-query', '--admindir='+str(root/'var/lib/dpkg'), '-W',
             '-f=${binary:Package}\t${Version}\t${source:Package}\t${source:Version}\t${db:Status-Status}\n'], text=True)
         inventory[role] = [dict(zip(('package', 'version', 'source_package', 'source_version'), row.split('\t')[:4]))
             for row in rows.splitlines() if row.split('\t')[-1] == 'installed']

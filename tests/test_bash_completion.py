@@ -55,7 +55,7 @@ class BashCompletionTests(unittest.TestCase):
         self.assertEqual(self.complete('armhpc', 'ota', 'app'), ['apply'])
         self.assertEqual(self.complete('armhpc-rescue', 'ota', 'tools', 'up'), ['update'])
         self.assertEqual(set(self.complete('armhpc', 'ota', 'source', '')), {'show', 'set', 'test'})
-        self.assertEqual(set(self.complete('armhpc-rescue', 'ota', 'boot', '')), {'plan', 'apply', 'status', 'rollback', 'restore'})
+        self.assertEqual(set(self.complete('armhpc-rescue', 'ota', 'boot', '')), {'plan', 'enter', 'apply', 'status', 'rollback', 'restore'})
         self.assertEqual(self.complete('armhpc-rescue','ota','boot','restore','--exec'),['--execute'])
         self.assertNotIn('_service', self.complete('armhpc', 'ota', ''))
         self.assertNotIn('prepare', self.complete('armhpc', 'watchdog', ''))

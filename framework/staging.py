@@ -131,8 +131,11 @@ if {workload!r} == 'k3s':
     fstab.write_text('\\n'.join('# image-framework: ' + line if len(line.split()) >= 3 and not line.lstrip().startswith('#') and line.split()[2] == 'swap' else line for line in lines) + '\\n')
 PY
 if [[ {shlex.quote(workload)} == k3s ]]; then
-    systemctl mask swap.target armbian-swap.service zramswap.service
+    systemctl mask armbian-swap.service zramswap.service
 fi
+systemctl unmask swap.target
+systemctl disable systemd-networkd-wait-online.service
+systemctl enable armhpc-management-ready.service armhpc-state.service armhpc-runtime.service armhpc-swap.service armhpc-auth-recovery.service armhpc-firewall.service armhpc-health.timer
 # Inspect the resulting rootfs, including packages brought in by upstream defaults.
 python3 /usr/lib/image-framework/image-audit.py / --policy /etc/image-framework/firmware-policy.json --skip-build-overlay
 '''

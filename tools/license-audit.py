@@ -1,12 +1,17 @@
 # SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
 """Inventory publishable sources without inspecting local caches or user files."""
-import argparse,hashlib,json,re
+import argparse,hashlib,json,re,os
 from pathlib import Path
 
 def inventory(root):
     root=Path(root).resolve();default='GPL-3.0-only' if root.name=='armhpc-ota' or (root/'pyproject.toml').exists() else 'GPL-2.0-only'
     files=[];errors=[]
-    for p in sorted(root.rglob('*')):
+    candidates=[]
+    excluded={'.git','build','cache','sources','private','local','dist','bin','obj','__pycache__','.venv','.vs','.pytest_cache'}
+    for directory,folders,names in os.walk(root):
+        folders[:]=[name for name in folders if name not in excluded and not name.endswith('.egg-info')]
+        candidates.extend(Path(directory)/name for name in names)
+    for p in sorted(candidates):
         q=p.relative_to(root)
         if q.parts[0] in ('.git','build','cache','sources','private','local','dist') or any(x in q.parts for x in ('bin','obj','__pycache__','.venv','.vs')):continue
         if any(x.endswith('.egg-info') or x=='.pytest_cache' for x in q.parts):continue
@@ -26,6 +31,8 @@ def inventory(root):
                 origin='ARMHPC local backport / Andreas Zdziarstek RFC 20260706223627.113814-2 on lore.kernel.org/linux-phy'
             elif p.name=='zz-armhpc-linux-6.12.111-driver-apis.patch':
                 origin='ARMHPC driver compatibility adaptation / Linux 6.12.111 e2acc2211022246c77740d5df08265cc27eedcc5'
+            elif p.name in ('board-oect-retained-drivers.patch','board-oect-rtl8211f-ledsel.patch'):
+                origin='Retained ARMHPC v1.0.0 corresponding OECT 6.12.111 source / Armbian build 147b9a23f09fae4d5ef8e73cf07ee69652ff4976 / original driver authors'
             else:
                 origin='Armbian build 147b9a23f09fae4d5ef8e73cf07ee69652ff4976 / original patch authors / ARMHPC context backports'
         elif q.parts[:3]==('adapters','boards','wxy-oesp-v22') and p.suffix in ('.dts','.c','.patch'):

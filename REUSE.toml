@@ -17,3 +17,9 @@ path = ["adapters/boards/wxy-oesp-v22/licenses/LICENCE.rtlwifi_firmware.txt", "L
 precedence = "override"
 SPDX-FileCopyrightText = "2010 Realtek Semiconductor Corporation"
 SPDX-License-Identifier = "LicenseRef-Realtek-Firmware"
+
+[[annotations]]
+path = ["profiles/kernel/kubernetes.json"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 ARMHPC contributors"
+SPDX-License-Identifier = "GPL-2.0-only OR GPL-3.0-only"
