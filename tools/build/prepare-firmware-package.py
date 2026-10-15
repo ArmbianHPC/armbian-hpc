@@ -11,6 +11,11 @@ import subprocess
 import sys
 import tarfile
 
+PUBLIC_KERNEL_FIXTURES = {
+    # Published with Linux v6.12.111; this SGX selftest fixture is not a device credential.
+    'tools/testing/selftests/sgx/sign_key.pem': '1f6566d02247dc09d4dcb542ee2399522ceebf9b435ee00fe2053aa5582541e2',
+}
+
 
 def sha(path):
     with Path(path).open('rb') as stream:
@@ -35,8 +40,13 @@ def source_inputs(path):
             with tarfile.open(source, 'r:xz') as archive:
                 for member in archive:
                     parts = Path(member.name).parts
-                    if member.name.startswith('/') or '..' in parts or member.name.endswith(('.pem', '.key', '.pfx', '.p12')):
+                    if member.name.startswith('/') or '..' in parts:
                         raise ValueError('Unsafe corresponding source member')
+                    if member.name.endswith(('.pem', '.key', '.pfx', '.p12')):
+                        relative = parts[1:] if parts and parts[0].startswith('linux-') else parts
+                        expected = PUBLIC_KERNEL_FIXTURES.get('/'.join(relative)) if row.get('kind') == 'kernel' else None
+                        if not expected or not member.isfile() or hashlib.sha256(archive.extractfile(member).read()).hexdigest() != expected:
+                            raise ValueError('Unrecognised key material in corresponding source: ' + member.name)
         names.add(name)
     return rows
 
