@@ -55,6 +55,10 @@ armhpc-ota_<version>_<model>_<distribution>_<kernel>_<filesystem>_<build-date>.t
 
 The first file is a compressed flashing image. The second contains signed normal-system and Rescue payloads for the OTA controller. The build date is `YYYYMMDD` and reflects the actual compilation date. Choose the package matching the device's target profile. Firmware packages and private build inputs are kept outside this source repository.
 
+## Initial access
+
+The supplied v1.2.0 images use `root` with initial password `armhpc`. Sign in through SSH and run `passwd` to set your password. Existing devices retain their login configuration during OTA.
+
 ## Documentation
 
 - [OES1PLUS v2.2 integration](docs/OESP.md) / [简体中文](docs/OESP.zh-CN.md)
