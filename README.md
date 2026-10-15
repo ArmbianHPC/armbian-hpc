@@ -57,7 +57,7 @@ The first file is a compressed flashing image. The second contains signed normal
 
 ## Initial access
 
-The supplied v1.2.0 images use `root` with initial password `armhpc`. Sign in through SSH and run `passwd` to set your password. Existing devices retain their login configuration during OTA.
+The supplied v1.2.0 images use `root` with initial password `1`. Sign in through SSH and run `passwd` to set your password. Existing devices retain their login configuration during OTA.
 
 ## Documentation
 
