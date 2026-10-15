@@ -78,3 +78,24 @@ def test_incomplete_upload_retains_old_assets(tmp_path):
         with pytest.raises(ValueError, match='old assets retained'):
             module.update('owner/repo', 'v1.2.0', tmp_path, manifest=manifest, notes=notes, apply=True, release_id=42)
     assert not any('DELETE' in call.args[0] or 'PATCH' in call.args[0] for call in mutate.call_args_list)
+
+
+def test_metadata_and_publish_updates_preserve_version_tag(tmp_path):
+    module = load('draft_tag_regression')
+    asset = tmp_path / 'package.tar.xz'
+    asset.write_bytes(b'payload')
+    notes = tmp_path / 'v1.2.0.md'
+    notes.write_text('Changes')
+    notes.with_name('v1.2.0.zh-CN.md').write_text('Changes')
+    current = {'id': 42, 'name': 'v1.2.0', 'tag_name': 'v1.2.0', 'draft': True,
+        'prerelease': False, 'upload_url': 'https://uploads.github.com/repos/owner/repo/releases/42/assets{?name,label}',
+        'html_url': 'https://github.com/owner/repo/releases/tag/v1.2.0',
+        'assets': [{'name': asset.name, 'size': asset.stat().st_size, 'digest': 'sha256:' + module.sha256(asset)}]}
+    public = {**current, 'draft': False}
+    with patch.object(module, 'release', side_effect=[current, current, current, public]), patch.object(module.subprocess, 'run') as mutate:
+        result = module.publish_packages('owner/repo', 'v1.2.0', [asset], notes,
+            apply=True, release_id=42, publish=True)
+    updates = [json.loads(call.kwargs['input']) for call in mutate.call_args_list if 'PATCH' in call.args[0]]
+    assert len(updates) == 2 and all(row['tag_name'] == 'v1.2.0' for row in updates)
+    assert updates[0]['draft'] is True and updates[1]['draft'] is False
+    assert result['draft'] is False
