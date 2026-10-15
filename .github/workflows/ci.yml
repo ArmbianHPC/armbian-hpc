@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: GPL-2.0-only
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sources:
+    name: Framework Sources
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: armbian-hpc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: armbian-hpc
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ArmbianHPC/armhpc-ota
+          ref: 7709bb1a01cad3fb19eff6b6e2045c8539d45ecd
+          path: armhpc-ota
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            armbian-hpc/requirements-ci.txt
+            armbian-hpc/requirements-test.txt
+      - run: python -m pip install -r requirements-ci.txt
+      - run: python tools/check-maintenance.py
+      - run: python tools/license-audit.py --output "$RUNNER_TEMP/license-inventory.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: armbian-hpc-source-inventory
+          path: ${{ runner.temp }}/license-inventory.json
+          retention-days: 7
+  python:
+    name: Framework Python
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: armbian-hpc
+    env:
+      PYTHONPATH: ${{ github.workspace }}/armhpc-ota/src:${{ github.workspace }}/armbian-hpc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: armbian-hpc
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ArmbianHPC/armhpc-ota
+          ref: 7709bb1a01cad3fb19eff6b6e2045c8539d45ecd
+          path: armhpc-ota
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            armbian-hpc/requirements-ci.txt
+            armbian-hpc/requirements-test.txt
+      - run: python -m pip install -r requirements-ci.txt
+      - name: Install fixture tools
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y squashfs-tools u-boot-tools zstd xz-utils gcc
+      - name: Existing Python suite
+        run: sudo --preserve-env=PYTHONPATH,LD_LIBRARY_PATH "$(command -v python)" -m pytest tests --junitxml="$RUNNER_TEMP/python.xml"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: armbian-hpc-python-results
+          path: ${{ runner.temp }}/*.xml
+          retention-days: 7

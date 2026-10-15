@@ -61,6 +61,11 @@ The supplied v1.2.0 images use `root` with initial password `1`. Sign in through
 
 ## Documentation
 
+- [Device compatibility](docs/DEVICES.md)
+- [Contributing](CONTRIBUTING.md)
+- [Maintenance](docs/MAINTENANCE.md)
+- [Questions and ideas](https://github.com/ArmbianHPC/armbian-hpc/discussions)
+
 - [OES1PLUS v2.2 integration](docs/OESP.md) / [简体中文](docs/OESP.zh-CN.md)
 
 - [Building](docs/BUILD.md)
