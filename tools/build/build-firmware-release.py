@@ -24,8 +24,10 @@ def build(config):
     project = Path(__file__).resolve().parents[2]
     ota = Path(cfg['ota_source']).resolve(strict=True)
     version = (project / 'VERSION').read_text().strip()
-    if (ota / 'VERSION').read_text().strip() != version:
-        raise ValueError('Use matching framework and OTA software versions')
+    sys.path.insert(0, str(project))
+    from framework.compatibility import check_sources
+    compatibility = check_sources(ota, project)
+    source_versions = compatibility['source_versions']
     for repo in (project, ota):
         if subprocess.check_output(['git', '-C', str(repo), 'status', '--porcelain']).strip():
             raise ValueError('Build from clean committed sources')
@@ -60,7 +62,8 @@ def build(config):
         folder = work / role / 'usr/share/doc/armhpc'
         folder.mkdir(parents=True, exist_ok=True)
         (folder / 'BUILD-SOURCES.json').write_text(json.dumps({**provenance,
-            'version': version, 'release': cfg['release'], 'source_commits': refs,
+            'version': version, 'release': cfg['release'], 'source_versions': source_versions,
+            'source_commits': refs, 'compatibility': compatibility,
             'fixed_boot': json.loads((work / 'boot-manifest.json').read_text())}, indent=2) + '\n')
         for repo in (project, ota):
             for name in ('LICENSE', 'COPYRIGHT'):
@@ -126,7 +129,8 @@ def build(config):
     assets = [destination / (cfg['stem'] + '.img.xz'),
               destination / (cfg['stem'].replace('armhpc_', 'armhpc-ota_', 1) + '.tar.xz')]
     result = {'version': version, 'release': cfg['release'], 'sequence': cfg['sequence'],
-              'source_commits': refs, 'hardware_verified': False,
+              'source_versions': source_versions, 'source_commits': refs,
+              'compatibility': compatibility, 'hardware_verified': False,
               'image_redistribution': provenance.get('image_redistribution', {'reviewed': False}),
               'packages': [{'file': p.name, 'path': str(p), 'size': p.stat().st_size, 'sha256': sha(p)} for p in assets]}
     (output / 'FIRMWARE-RELEASE.json').write_text(json.dumps(result, indent=2) + '\n')

@@ -61,6 +61,8 @@ The supplied v1.2.0 images use `root` with initial password `1`. Sign in through
 
 ## Documentation
 
+- [Independent versions and compatibility](docs/COMPATIBILITY.md)
+
 - [Device compatibility](docs/DEVICES.md)
 - [Contributing](CONTRIBUTING.md)
 - [Maintenance](docs/MAINTENANCE.md)

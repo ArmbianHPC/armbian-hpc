@@ -42,7 +42,8 @@ def main():
     checks=[]
     def check(name,value,scope='local'):
         checks.append({'check':name,'passed':bool(value),'scope':scope})
-    check('agent 1.2.1',s.get('agent_version')=='1.2.1')
+    from armhpc_ota.boot_maintenance import version_tuple
+    check('agent >= 1.2.1',version_tuple(s.get('agent_version',''))>=version_tuple('1.2.1'))
     kernel=kernel_status();check('final kernel capabilities and modules',kernel['ready'])
     management=inspect(policy());check('management carrier, address and route',management['ready'])
     check('clock anchor',s.get('clock',{}).get('quality') in ('estimated','synchronised'))

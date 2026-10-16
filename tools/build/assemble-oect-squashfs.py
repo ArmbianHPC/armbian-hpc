@@ -38,13 +38,14 @@ def main():
     a=parser.parse_args();assert os.geteuid()==0
     inputs=json.loads(a.boot_manifest.read_text());KERNEL=inputs['kernel_release'];RELEASE=a.release;EPOCH=a.epoch
     sys.path.insert(0,str(a.ota_source/'src'))
-    from armhpc_ota import __version__
     STEM=a.stem or ('ArmbianHPC_'+(a.project/'VERSION').read_text().strip()+'_wxy-oect_bookworm_'+KERNEL.split('-')[0]+'_squashfs-ab')
     project,ota,work,output,base,private=(getattr(a,n).resolve() for n in ('project','ota_source','work','output','base_image','private_directory'))
     assert work.is_absolute() and work!=Path('/') and all((work/n).is_dir() for n in ('normal','rescue','boot','public'))
     assert not output.is_relative_to(project) and not output.is_relative_to(ota) and not output.is_relative_to(work) and not a.signing_key.resolve().is_relative_to(output)
-    output.mkdir(parents=True,exist_ok=True);(output/'.incomplete').write_text('Assembly and boot validation pending\n')
     sys.path.insert(0,str(ota/'src'));sys.path.insert(0,str(project))
+    from framework.compatibility import check_sources
+    compatibility=check_sources(ota,project)
+    output.mkdir(parents=True,exist_ok=True);(output/'.incomplete').write_text('Assembly and boot validation pending\n')
     from armhpc_ota.config import Config
     from armhpc_ota.io import atomic_bytes
     from armhpc_ota.metadata import verify,validate_manifest,sign,anchor_digest
@@ -75,7 +76,7 @@ def main():
     manifest_path=output/'ota'/(RELEASE+'.manifest.json')
     if not manifest_path.exists():
         spec={'release':RELEASE,'sequence':a.sequence,'board':board['id'],'architecture':'arm64','layout':board['layout'],
-              'anchor_abi':board['anchor_abi'],'minimum_agent':__version__,'kernels':{'system':KERNEL,'rescue':KERNEL},'targets':{}}
+              'anchor_abi':board['anchor_abi'],'minimum_agent':compatibility['minimum_agent'],'kernels':{'system':KERNEL,'rescue':KERNEL},'targets':{}}
         for target in ('system','rescue'):
             spec['targets'][target]={'rootfs':str(public/target),'kernel':str(boot/'Image'),'initramfs':str((boot/'uInitrd').resolve()),'dtb':str(dtb)}
         spec['targets']['rescue'].update(filesystem='squashfs',prebuilt_squashfs=str(work/'compression'/(selected['name']+'.squashfs')),
@@ -250,6 +251,7 @@ echo ARMHPC verified entry load failed
         pending.rename(image)
     save(output/'compression-comparison.json',comparison)
     meta={'schema_version':1,'release':RELEASE,'kernel_release':KERNEL,'work_directory':str(work),
+          'source_versions':compatibility['source_versions'],'compatibility':compatibility,
           'image':{'path':str(image),'size_bytes':image.stat().st_size,'sha256':sha(image)},
           'layout':board,'rescue_filesystem':'squashfs','selected_compression':selected,
           'rescue_image_bytes':sq.stat().st_size,'rescue_slot_bytes':board['rescue_a_sectors']*512,

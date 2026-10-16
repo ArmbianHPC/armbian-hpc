@@ -1,3 +1,7 @@
+# Unreleased
+
+- Allow independent framework and OTA versions with explicit compatibility requirements and separate source provenance.
+
 # v1.2.0
 
 

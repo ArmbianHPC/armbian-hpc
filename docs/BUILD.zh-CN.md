@@ -1,6 +1,6 @@
 # 框架构建
 
-检出框架和 OTA 的配套提交，通过 scripts/image-framework.py 的 list、validate、plan、stage 和 fetch-sources 准备目标。所有构建输出放在源码仓库之外。
+检出框架和 OTA 的兼容提交，版本号可以不同，参见[独立版本与兼容性](COMPATIBILITY.zh-CN.md)。通过 scripts/image-framework.py 的 list、validate、plan、stage 和 fetch-sources 准备目标。所有构建输出放在源码仓库之外。
 
 OECT 使用 GPT/ext4 BOOT，OESP 使用独立校验的 Amlogic 保留区、MBR/FAT32 BOOT。两个目标均提供 SquashFS Rescue A/B、共享 ext4 和 SATA ext4 普通系统及 DATA。板级构建入口位于 tools/build。
 

@@ -61,6 +61,8 @@ armhpc-ota_<版本>_<设备型号>_<系统代号>_<内核版本>_<文件系统>_
 
 ## 文档
 
+- [独立版本与兼容性](docs/COMPATIBILITY.zh-CN.md)
+
 - [设备兼容说明](docs/DEVICES.zh-CN.md)
 - [贡献说明](CONTRIBUTING.zh-CN.md)
 - [维护说明](docs/MAINTENANCE.zh-CN.md)

@@ -67,6 +67,9 @@ def prepare(project, ota_source, manifest, artifacts, trust, roots, source_manif
         Path(p).resolve() for p in (project, ota_source, artifacts, roots, output))
     if output.exists() or output.is_relative_to(project) or output.is_relative_to(ota_source):
         raise ValueError('Use a fresh package staging directory outside repositories')
+    sys.path.insert(0, str(project))
+    from framework.compatibility import check_sources
+    compatibility = check_sources(ota_source, project)
     refs = {}
     for repo in (project, ota_source):
         if subprocess.check_output(['git', '-C', str(repo), 'status', '--porcelain']).strip():
@@ -128,7 +131,8 @@ def prepare(project, ota_source, manifest, artifacts, trust, roots, source_manif
         subprocess.run(['python3', str(repo / 'tools/license-audit.py'), '--output',
                         str(licenses / (repo.name + '-sources.json'))], check=True)
     record = json.loads(Path(provenance).read_text())
-    record.update(source_commits=refs, corresponding_sources=records, board=payload['board'],
+    record.update(source_versions=compatibility['source_versions'], compatibility=compatibility,
+                  source_commits=refs, corresponding_sources=records, board=payload['board'],
                   release=payload['release'], fixed_boot=json.loads((roots / 'boot-manifest.json').read_text()))
     (output / 'BUILD-SOURCES.json').write_text(json.dumps(record, indent=2) + '\n')
     (output / 'README.md').write_text('# ARMHPC system OTA\n\n[简体中文](README.zh-CN.md)\n\n'
@@ -143,7 +147,8 @@ def prepare(project, ota_source, manifest, artifacts, trust, roots, source_manif
     (output / 'SHA256SUMS').write_text(''.join(sha(p) + '  ' + p.relative_to(output).as_posix() + '\n'
         for p in sorted(output.rglob('*')) if p.is_file()))
     result = inspect(output, output.parent / (output.name + '-inspection'))
-    return {'release': payload['release'], 'source_commits': refs, 'package': str(output), 'inspection': result['release']}
+    return {'release': payload['release'], 'source_versions': compatibility['source_versions'],
+            'source_commits': refs, 'package': str(output), 'inspection': result['release']}
 
 
 if __name__ == '__main__':

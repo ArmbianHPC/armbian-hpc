@@ -2,7 +2,7 @@
 
 [简体中文](BUILD.zh-CN.md)
 
-Check out matching framework and OTA commits. Use `scripts/image-framework.py list`, `validate`, `plan`, `stage` and `fetch-sources` to prepare target inputs. Build outside source repositories.
+Check out compatible framework and OTA commits; their release versions may differ. See [independent versions](COMPATIBILITY.md). Use `scripts/image-framework.py list`, `validate`, `plan`, `stage` and `fetch-sources` to prepare target inputs. Build outside source repositories.
 
 OECT uses GPT and ext4 BOOT; OESP uses a separately audited Amlogic reservation, MBR and FAT32 BOOT. Both targets provide SquashFS Rescue A/B, shared ext4, and a SATA ext4 normal system and DATA partition. Use the board-specific kernel/root preparation and assembly entries under `tools/build`.
 
