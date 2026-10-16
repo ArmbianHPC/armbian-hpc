@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only -->
-# 1.3.0 底层镜像与固件升级
+# 1.2.1 底层镜像与固件升级
 
-[English](BASE-IMAGE-1.3.0.md)
+[English](BASE-IMAGE-1.2.1.md)
 
 本版重新编译 OECT、OESP 的 Linux 6.12.111，增加管理网络、DATA 上已登记程序和服务恢复、普通系统 SSH 认证事务、防火墙、资源及加密 swap 配置档。本次为本地交付，软件检查与实机验收分别记录。
 
@@ -94,7 +94,7 @@ armhpc health status --json
 
 ## 固件 OTA 与回滚
 
-使用配套 1.3.0 上位机和维护包，导入对应板型 TAR.XZ 并选 **all**。嵌套 BOOT 包签名用途为 firmware-update、最低 agent 1.3.0。流程先维护三环境工具，核验板型/布局/签名/哈希/原 BOOT 配套，再进入已确认 Rescue，导出并核验本机私有 BOOT 恢复备份，部署新 BOOT 和备用 Rescue，确认启动后更新配套 SATA 系统，核验恢复资源和服务再提交。
+使用配套 1.2.1 上位机和维护包，导入对应板型 TAR.XZ 并选 **all**。嵌套 BOOT 包签名用途为 firmware-update、最低 agent 1.2.1。流程先维护三环境工具，核验板型/布局/签名/哈希/原 BOOT 配套，再进入已确认 Rescue，导出并核验本机私有 BOOT 恢复备份，部署新 BOOT 和备用 Rescue，确认启动后更新配套 SATA 系统，核验恢复资源和服务再提交。
 
 保留电脑上的私有恢复备份。断流或关闭上位机不重新创建任务，不将未知结果算作成功；继续查询原任务 ID。原 BOOT 不属于受支持的配套时，切换前拒绝，需匹配迁移包或镜像。
 
@@ -102,13 +102,13 @@ armhpc health status --json
 
 ## 单台验收
 
-上传随包 verify-node-1.3.py：
+上传随包 verify-node-1.2.1.py：
 
 ```sh
-python3 /root/verify-node-1.3.py
-python3 /root/verify-node-1.3.py --baseline
+python3 /root/verify-node-1.2.1.py
+python3 /root/verify-node-1.2.1.py --baseline
 # 完成约定的升级/切换后，在普通系统运行：
-python3 /root/verify-node-1.3.py --compare
+python3 /root/verify-node-1.2.1.py --compare
 ```
 
 baseline 显式在已核验 DATA 写入 1 MiB 标记，保留私有身份和配置基线；compare 只打印比较结果。报告仅保存于真实可写 OTA_SHARED。脚本不签发硬件通过。

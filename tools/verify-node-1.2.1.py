@@ -42,7 +42,7 @@ def main():
     checks=[]
     def check(name,value,scope='local'):
         checks.append({'check':name,'passed':bool(value),'scope':scope})
-    check('agent 1.3.0',s.get('agent_version')=='1.3.0')
+    check('agent 1.2.1',s.get('agent_version')=='1.2.1')
     kernel=kernel_status();check('final kernel capabilities and modules',kernel['ready'])
     management=inspect(policy());check('management carrier, address and route',management['ready'])
     check('clock anchor',s.get('clock',{}).get('quality') in ('estimated','synchronised'))
@@ -94,7 +94,7 @@ def main():
                 check('selected K3s installation',installation['ready'])
                 check('K3s service, CRI and local API',runtime(kp)['ready'])
     elif args.baseline or args.compare:raise RuntimeError('Run baseline/compare in the SATA normal system')
-    report={'schema_version':1,'version':'1.3.0','mode':s.get('mode'),'board':s.get('board'),
+    report={'schema_version':1,'version':'1.2.1','mode':s.get('mode'),'board':s.get('board'),
             'epoch':time.time(),'kernel':kernel,'management':management,'checks':checks,
             'comparison':comparison,'passed':all(row['passed'] for row in checks),
             'hardware_acceptance_signed':False,'pending':['physical reboot/cold-start/power-loss matrix',

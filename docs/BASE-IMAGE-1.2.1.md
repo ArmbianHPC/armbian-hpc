@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only -->
-# Base image and firmware updates in 1.3.0
+# Base image and firmware updates in 1.2.1
 
-[简体中文](BASE-IMAGE-1.3.0.zh-CN.md)
+[简体中文](BASE-IMAGE-1.2.1.zh-CN.md)
 
-This version rebuilds the OECT and OESP Linux 6.12.111 kernels, restores explicitly registered node resources from DATA, and adds management network, authentication, firewall, resource and encrypted swap controls. Software checks and physical acceptance have separate results. Version 1.3.0 is delivered locally for operator acceptance.
+This version rebuilds the OECT and OESP Linux 6.12.111 kernels, restores explicitly registered node resources from DATA, and adds management network, authentication, firewall, resource and encrypted swap controls. Software checks and physical acceptance have separate results. Version 1.2.1 is delivered locally for operator acceptance.
 
 ## Kernel and startup
 
@@ -108,7 +108,7 @@ Health collection runs every 60 seconds with a 15-second service limit. JSON and
 
 ## Firmware OTA and rollback
 
-Use the matching 1.3.0 controller and maintenance package. Import the board's signed TAR.XZ and select **all**. The included `firmware/boot-update.tar.xz` uses the signed `firmware-update` purpose and requires agent 1.3.0. The controller:
+Use the matching 1.2.1 controller and maintenance package. Import the board's signed TAR.XZ and select **all**. The included `firmware/boot-update.tar.xz` uses the signed `firmware-update` purpose and requires agent 1.2.1. The controller:
 
 1. Maintains tools in the normal system and Rescue A/B.
 2. Verifies device, board, layout, BOOT ABI, signature, payload hashes and the supported old BOOT pairing.
@@ -122,13 +122,13 @@ Normal firmware confirmation does not sign watchdog/kexec acceptance. If a kerne
 
 ## Acceptance and requirement mapping
 
-Copy `tools/verify-node-1.3.py` to the node. It stores reports only on a real writable OTA_SHARED mount:
+Copy `tools/verify-node-1.2.1.py` to the node. It stores reports only on a real writable OTA_SHARED mount:
 
 ```sh
-python3 /root/verify-node-1.3.py
-python3 /root/verify-node-1.3.py --baseline
+python3 /root/verify-node-1.2.1.py
+python3 /root/verify-node-1.2.1.py --baseline
 # After the agreed upgrade/switch sequence, in the normal system:
-python3 /root/verify-node-1.3.py --compare
+python3 /root/verify-node-1.2.1.py --compare
 ```
 
 Baseline mode explicitly writes a 1 MiB marker on verified DATA and retains a private immutable configuration/identity baseline. Compare reports pass/fail without printing credentials. Local checks do not sign physical acceptance.
