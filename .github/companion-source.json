@@ -1,6 +1,6 @@
 {
   "repository": "ArmbianHPC/armhpc-ota",
-  "ref": "c61d041bf6efb4609af4b72827d529add6351bf4",
-  "release": "v1.2.1",
+  "ref": "8171a136505346d9328882d63af414e48c4d3b4f",
+  "release": "v1.2.3-r10",
   "purpose": "Pinned public companion source used by CI; update deliberately with compatibility checks."
 }
