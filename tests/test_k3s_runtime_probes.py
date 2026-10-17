@@ -35,6 +35,20 @@ class K3sRuntimeProbes(unittest.TestCase):
         self.assertIn('/etc/rancher/k3s/k3s.yaml',arguments)
         return subprocess.CompletedProcess(arguments,0,'ok','')
 
+    def test_reserved_node_role_namespace_is_checked_as_a_label_key(self):
+        from config_io import ConfigError
+        for label in ('node-role.kubernetes.io/worker=true', 'node-role.kubernetes.io/server'):
+            with self.subTest(label=label), self.assertRaises(ConfigError):
+                kube_runtime.check_configuration(json.dumps({'node-label':[label]}))
+        for label in ('example.com/role=worker', 'role=worker', 'custom.node-role.kubernetes.io/worker=true'):
+            self.assertEqual([label], kube_runtime.check_configuration(json.dumps({'node-label':[label]}))['node-label'])
+
+    def test_node_label_schema_rejects_scalar_and_nonstring_entries(self):
+        from config_io import ConfigError
+        for value in ('role=worker', None, [17], {'role':'worker'}):
+            with self.subTest(value=value), self.assertRaises(ConfigError):
+                kube_runtime.check_configuration(json.dumps({'node-label':value}))
+
     def test_agent_uses_managed_paths_and_requires_runtime_ready(self):
         with mock.patch.dict(os.environ,{'K3S_DATA_DIR':'/wrong','CRI_CONFIG_FILE':'/wrong'}),mock.patch.object(kube_runtime.subprocess,'run',side_effect=self.runner) as probe:
             value=kube_runtime.runtime(self.policy)

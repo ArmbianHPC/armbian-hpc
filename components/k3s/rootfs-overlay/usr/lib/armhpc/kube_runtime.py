@@ -23,8 +23,14 @@ def check_configuration(text):
     UniqueLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, mapping)
     value = yaml.load(text, Loader=UniqueLoader)
     require(isinstance(value, dict), 'k3s_configuration', 'K3s configuration must be a mapping')
-    for label in value.get('node-label', []):
-        require(not label.startswith('node-role.kubernetes.io/'), 'k3s_label', 'Reserved role labels must be applied by a cluster administrator')
+    labels = value.get('node-label', [])
+    require(isinstance(labels, list) and all(isinstance(label, str) for label in labels),
+            'k3s_label', 'Node labels must be a list of strings')
+    for label in labels:
+        key = label.partition('=')[0]
+        namespace, separator, _ = key.partition('/')
+        require(not separator or namespace != 'node-role.kubernetes.io',
+                'k3s_label', 'Reserved role labels must be applied by a cluster administrator')
     args = value.get('kubelet-arg', [])
     require(len(args) == len(set(item.split('=', 1)[0] for item in args)),
             'k3s_argument', 'Duplicate kubelet options')
