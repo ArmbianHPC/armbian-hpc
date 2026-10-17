@@ -18,7 +18,7 @@ def load(name,path):
     return value
 
 
-def rebase(project,ota_source,input_roots,boot_manifest,work,watchdog_binary,board,release,epoch,kernel_work,resume=False,apt_proxy=None):
+def rebase(project,ota_source,input_roots,boot_manifest,work,watchdog_binary,board,release,epoch,kernel_work,resume=False,apt_proxy=None,offline_dependencies=False):
     project,ota_source,input_roots,work,kernel_work=map(lambda p:Path(p).resolve(),
         (project,ota_source,input_roots,work,kernel_work))
     sys.path.insert(0,str(project))
@@ -111,9 +111,19 @@ def rebase(project,ota_source,input_roots,boot_manifest,work,watchdog_binary,boa
                 environment=['env','DEBIAN_FRONTEND=noninteractive']
                 if apt_proxy:environment+=['http_proxy='+apt_proxy,'https_proxy='+apt_proxy]
                 options=['-o','Acquire::Retries=1','-o','Acquire::http::Timeout=20','-o','Acquire::https::Timeout=20']
-                tools.run('chroot',root,*environment,'apt-get',*options,'-o','APT::Update::Error-Mode=any','update')
-                tools.run('chroot',root,*environment,'apt-get',*options,'install','-y','--no-install-recommends',*packages)
-                tools.run('chroot',root,'apt-get','clean')
+                if offline_dependencies:
+                    installed=tools.run('chroot',root,'dpkg-query','-W','-f=${Package}\t${Status}\t${Version}\n',
+                                        *packages,capture=True)
+                    rows=[line.split('\t') for line in installed.splitlines()]
+                    tools.require(len(rows)==len(packages) and {row[0] for row in rows}==set(packages) and
+                                  all(len(row)==3 and row[1]=='install ok installed' and row[2] for row in rows),
+                                  'Offline dependency mode requires all declared packages to be installed')
+                    tools.save(root/'usr/share/doc/armhpc/OFFLINE-DEPENDENCIES.json',
+                               {'source':'verified input root','packages':{row[0]:row[2] for row in rows}})
+                else:
+                    tools.run('chroot',root,*environment,'apt-get',*options,'-o','APT::Update::Error-Mode=any','update')
+                    tools.run('chroot',root,*environment,'apt-get',*options,'install','-y','--no-install-recommends',*packages)
+                    tools.run('chroot',root,'apt-get','clean')
         finally:
             if previous_guard is not None:guard.write_bytes(previous_guard)
             else:guard.unlink(missing_ok=True)
@@ -166,4 +176,5 @@ if __name__=='__main__':
     parser.add_argument('--release',required=True);parser.add_argument('--epoch',type=int,required=True)
     parser.add_argument('--resume',action='store_true')
     parser.add_argument('--apt-proxy',help='Build-only proxy; not written into target configuration')
+    parser.add_argument('--offline-dependencies',action='store_true',help='Verify declared packages in the input root without network updates')
     print(json.dumps(rebase(**vars(parser.parse_args())),indent=2))

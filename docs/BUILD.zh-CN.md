@@ -11,3 +11,5 @@ OECT 使用 GPT/ext4 BOOT，OESP 使用独立校验的 Amlogic 保留区、MBR/F
 `pack-firmware.py` 压缩并验证 IMG 与 OTA。OESP 应先用 package-oesp-burn.py 生成 USB Burning Tool 原生容器，再交给通用打包器。保留 BOOT 对应的内核配置和补丁也需随附。私有引导输入及凭据不进入 Git，公开镜像须有实际组件许可依据。
 
 安装 requirements-test.txt 后执行 `PYTHONPATH=../armhpc-ota/src python3 -m pytest tests`，完整收集 unittest 与函数测试。发布通过一个清单列出全部机型的 IMG/OTA、大小、哈希和镜像再分发材料，统一核对后上传。
+
+从已核验的根文件系统重复构建时，可在私有固件构建输入中明确设置 `offline_dependencies: true`。内核根文件系统准备会逐项核对依赖已安装并记录版本；缺包即停止。默认仍执行联网依赖检查。

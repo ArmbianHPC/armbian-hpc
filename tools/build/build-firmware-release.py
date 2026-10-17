@@ -57,6 +57,9 @@ def build(config):
         if not cfg.get('kernel_work'):raise ValueError('Only rebuilt-kernel roots support guarded resume')
         kernel_arguments.append('--resume')
     if cfg.get('apt_proxy'):kernel_arguments+=['--apt-proxy',cfg['apt_proxy']]
+    if cfg.get('offline_dependencies'):
+        if not cfg.get('kernel_work'):raise ValueError('Offline dependency verification requires the kernel-root rebase entry')
+        kernel_arguments.append('--offline-dependencies')
     run(prepare, '--project', project, '--ota-source', ota,
         '--input-roots', cfg['input_roots'], '--boot-manifest', cfg['boot_manifest'],
         '--work', work, '--watchdog-binary', cfg['watchdog_binary'], '--board', cfg['board'],

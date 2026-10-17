@@ -48,9 +48,9 @@ def prepare(export,trust,directory):
     files=recovery['files'];image=export.parent/'BOOT-rescue.img';item=data['files']['BOOT-rescue.img']
     need(image.is_file() and not image.is_symlink() and image.stat().st_size==item['bytes']==board['boot_sectors']*512 and
          sha256(image)==item['sha256'],'Private BOOT recovery image size/hash differs')
-    need(signed['requires']['kernel_sha256']==files['kernel']['sha256'] and
-         signed['requires']['dtb_sha256']==files['dtb']['sha256'] and
-         signed['files']['recovery-initramfs']['sha256']==files['initramfs']['sha256'],'Signed recovery hashes differ')
+    from armhpc_ota.boot_maintenance import select_recovery_initramfs
+    recovery_name=select_recovery_initramfs(signed,files)
+    need(signed['files'][recovery_name]['sha256']==files['initramfs']['sha256'],'Signed recovery hashes differ')
     paths={}
     with image.open('rb') as source:
         def read_at(offset,length):source.seek(offset);return source.read(length)

@@ -1,3 +1,9 @@
+# v1.2.1-r2
+
+- Build OECT and OESP firmware with recovery coverage for both original and current Rescue baselines.
+- Include corrected K3s probes, label validation, shared-filesystem startup and OTA runtime.
+- Verify installed dependency versions during explicitly selected offline rebuilds.
+
 # v1.2.1-r1
 
 - Integrate managed K3s probes, paired BOOT recovery and shared ext4 startup fixes.
