@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+[Unit]
+Description=Check ARMHPC management network
+Wants=systemd-networkd.service
+After=systemd-networkd.service armhpc-firstboot.service
+Before=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/network_ready.py --timeout 45
+TimeoutStartSec=50
+RemainAfterExit=yes
+
+[Install]
+WantedBy=network-online.target

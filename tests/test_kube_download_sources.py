@@ -117,7 +117,7 @@ class KubeDownloadSourceTests(unittest.TestCase):
     def test_legacy_custom_menu_two_and_registry_mapping_remain_available(self):
         policy = {'installer_url': source()['installer_url'], 'artifact_url': source()['artifact_url']}
         answers = ['2', 'https://custom.invalid/install.sh', 'https://custom.invalid/releases/', 'docker.io', 'https://registry.invalid']
-        with patch.object(kube, 'ask', side_effect=answers), patch.object(kube, 'yes', return_value=True), redirect_stdout(io.StringIO()):
+        with patch.object(kube, 'ask', side_effect=answers), patch.object(kube, 'yes', side_effect=[True,False,False]), redirect_stdout(io.StringIO()):
             value = kube.collect_download_source(policy)
         self.assertEqual('https://custom.invalid/releases', value['artifact_url'])
         self.assertEqual({'docker.io': ['https://registry.invalid']}, value['registry_mirrors'])
@@ -144,6 +144,9 @@ class KubeDownloadSourceTests(unittest.TestCase):
                 Path(destination).write_text('#!/bin/sh\n')
             with patch.object(kube, 'prepare_storage', return_value='k3s'), patch.object(kube, 'run', side_effect=run), \
                  patch.object(kube, 'wait_for_service'), patch.object(kube, 'download_installer', side_effect=download), \
+                 patch.object(kube,'management_status',return_value={'ready':False}), \
+                 patch.object(kube,'prepare_recovery_resources',return_value={'version':plan['version']}), \
+                 patch.object(kube,'capture_installation'), \
                  patch.object(kube.tempfile, 'TemporaryDirectory', side_effect=lambda **kwargs: actual_temp(dir=root)), redirect_stdout(io.StringIO()):
                 kube.install(policy, state, None)
             self.assertEqual(original, state['plan'])
@@ -151,6 +154,8 @@ class KubeDownloadSourceTests(unittest.TestCase):
             self.assertEqual('v1.36.5+k3s1', captured[0]['INSTALL_K3S_VERSION'])
             self.assertEqual('server', captured[0]['INSTALL_K3S_EXEC'])
             self.assertEqual('true', captured[0]['INSTALL_K3S_SKIP_START'])
+            self.assertEqual('true',captured[0]['INSTALL_K3S_SKIP_DOWNLOAD'])
+            self.assertEqual(plan['version'],state['artifacts']['version'])
             self.assertEqual('cn', captured[0]['INSTALL_K3S_MIRROR'])
             self.assertEqual('https://rancher-mirror.rancher.cn', captured[0]['INSTALL_K3S_MIRROR_URL'])
             self.assertEqual(policy['configuration_dir'] + '/config.yaml', captured[0]['K3S_CONFIG_FILE'])

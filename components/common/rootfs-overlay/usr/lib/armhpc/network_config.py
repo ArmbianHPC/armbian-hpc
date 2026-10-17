@@ -35,7 +35,9 @@ def validate_interface(value):
     return value
 
 
-def settings(interface, dhcp=False, address=None, gateway=None, dns=None):
+def settings(interface, dhcp=False, address=None, gateway=None, dns=None, *, management=False,
+             family='ipv4', management_target=None, metric=None, default_route=None,
+             route_table=None, source=None):
     validate_interface(interface)
     require(bool(dhcp) != bool(address), 'network_arguments', 'Select --dhcp or --address IPv4/PREFIX')
     parsed = None
@@ -65,8 +67,29 @@ def settings(interface, dhcp=False, address=None, gateway=None, dns=None):
             if str(parsed_dns) not in servers:
                 servers.append(str(parsed_dns))
     require(len(servers) <= 6, 'dns_invalid', 'Use at most six DNS servers')
-    return {'interface': interface, 'method': 'dhcp' if dhcp else 'static',
-            'address': str(parsed) if parsed else None, 'gateway': gateway, 'dns': servers}
+    result = {'interface': interface, 'method': 'dhcp' if dhcp else 'static',
+              'address': str(parsed) if parsed else None, 'gateway': gateway, 'dns': servers}
+    if management or family != 'ipv4' or management_target or metric is not None or default_route is not None or route_table or source:
+        require(family in ('ipv4', 'ipv6', 'both'), 'management_family', 'Select ipv4, ipv6 or both')
+        require(isinstance(management, bool) and default_route in (None, True, False), 'network_policy', 'Invalid management/default-route selector')
+        if management_target:
+            management_target = str(ipaddress.ip_address(management_target))
+        if metric is None:
+            metric = 100 if interface == 'eth0' else 200
+        require(isinstance(metric, int) and 0 <= metric <= 2**32-1, 'route_metric', 'Invalid route metric')
+        if route_table is not None:
+            require(isinstance(route_table, int) and 1 <= route_table <= 60000 and route_table not in (253,254,255),
+                    'route_table', 'Select a nonreserved routing table (1–60000)')
+            require(parsed is not None and gateway is not None and source is not None,
+                    'policy_route', 'Source routing requires a static address, gateway and --source')
+        if source:
+            selected_source = ipaddress.IPv4Network(source, strict=False)
+            require(route_table is not None and parsed is not None and parsed.ip in selected_source,
+                    'policy_source', 'Source prefix must contain the configured address and use --route-table')
+            source = str(selected_source)
+        result['policy'] = {'management': management, 'family': family, 'management_target': management_target,
+                            'metric': metric, 'default_route': default_route, 'route_table': route_table, 'source': source}
+    return result
 
 
 def render(value):
@@ -83,6 +106,24 @@ def render(value):
         rows.extend(('', '[' + section + ']', 'UseDNS=' + dns_auto))
         if section != 'IPv6AcceptRA':
             rows.append('UseHostname=no')
+    policy = value.get('policy')
+    if policy:
+        rows.extend(('', '[Link]', 'RequiredForOnline=' + ('routable' if policy['management'] else 'no'),
+                     'RequiredFamilyForOnline=' + policy['family']))
+        if value['gateway']:
+            rows = [line for line in rows if line != 'Gateway=' + value['gateway']]
+            if policy['default_route'] is not False:
+                rows.extend(('', '[Route]', 'Gateway=' + value['gateway'], 'Metric=' + str(policy['metric'])))
+        for section in ('DHCPv4', 'DHCPv6', 'IPv6AcceptRA'):
+            rows.extend(('', '[' + section + ']', 'RouteMetric=' + str(policy['metric'])))
+            if policy['default_route'] is not None and section != 'DHCPv6':
+                rows.append('UseGateway=' +
+                            ('yes' if policy['default_route'] else 'no'))
+        if policy['route_table']:
+            rows.extend(('', '[Route]', 'Destination=0.0.0.0/0', 'Gateway=' + value['gateway'],
+                         'Table=' + str(policy['route_table']), 'Metric=' + str(policy['metric']),
+                         '', '[RoutingPolicyRule]', 'From=' + policy['source'],
+                         'Table=' + str(policy['route_table']), 'Priority=' + str(10000 + policy['route_table'])))
     return '\n'.join(rows) + '\n'
 
 
@@ -120,7 +161,7 @@ class Network:
                         'configuration_state', 'Invalid network transaction identity')
                 proposed = value['proposed']
                 require(settings(proposed['interface'], proposed['method'] == 'dhcp', proposed['address'],
-                                 proposed['gateway'], proposed['dns']) == proposed,
+                                 proposed['gateway'], proposed['dns'], **proposed.get('policy', {})) == proposed,
                         'configuration_state', 'Network transaction contains invalid settings')
                 require(value['stage'] in PENDING | {'confirmed', 'rolled-back', 'failed'} and
                         isinstance(value['boot_id'], str) and bool(value['boot_id']) and
@@ -223,6 +264,9 @@ class Network:
             record = {'protocol': 1, 'transaction_id': str(uuid.uuid4()), 'boot_id': self.boot_id(),
                       'stage': 'queued', 'proposed': value, 'rollback_after': rollback_after,
                       'backup': previous, 'sha256': hashlib.sha256(plan['content'].encode()).hexdigest()}
+            if value.get('policy', {}).get('management'):
+                management = safe_path(self.root, 'etc/armhpc/management-network.json')
+                record['backup_management'] = read_json(management)
             self.state.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             self.state.parent.chmod(0o700)
             save_json(self.state, record)
@@ -270,6 +314,10 @@ class Network:
             save_json(self.state, record)
             try:
                 atomic_write(self.config_path(record['proposed']['interface']), render(record['proposed']))
+                if 'backup_management' in record:
+                    value = record['proposed']
+                    save_json(safe_path(self.root, 'etc/armhpc/management-network.json'),
+                              {'interface': value['interface'], **value['policy']})
                 self.reload(record['proposed']['interface'])
                 record['stage'] = 'pending'
                 save_json(self.state, record)
@@ -295,6 +343,16 @@ class Network:
             elif path.exists():
                 path.unlink()
                 sync_directory(path.parent)
+            if 'backup_management' in record:
+                management = safe_path(self.root, 'etc/armhpc/management-network.json')
+                expected = {'interface': record['proposed']['interface'], **record['proposed']['policy']}
+                require(read_json(management) in (expected, record['backup_management']),
+                        'network_config_changed', 'Management policy changed outside this transaction')
+                if record['backup_management'] is not None:
+                    save_json(management, record['backup_management'])
+                elif management.exists():
+                    management.unlink()
+                    sync_directory(management.parent)
             record['stage'] = 'rolled-back'
             save_json(self.state, record)
             if reload:
@@ -449,7 +507,18 @@ def wizard(network, interface=None):
     address = input('IPv4 地址/前缀，例如 192.168.100.20/24: ').strip() if method == 'static' else None
     gateway = (input('IPv4 网关（可留空）: ').strip() or None) if method == 'static' else None
     dns = input('DNS 地址，以逗号分隔（留空使用自动 DNS）: ').strip()
-    return settings(selected, method == 'dhcp', address, gateway, [dns] if dns else [])
+    management=input('用作管理接口？[Y/n]: ').strip().lower() not in ('n','no')
+    family=input('管理所需地址族 [ipv4/ipv6/both] (ipv4): ').strip() or 'ipv4'
+    target=input('管理目标 IP（留空检查默认路由）: ').strip() or None
+    metric=int(input('默认路由 metric (100): ').strip() or '100')
+    default=input('使用此接口的默认出口？[Y/n]: ').strip().lower() not in ('n','no')
+    table=source=None
+    if method=='static' and input('配置源地址策略路由？[y/N]: ').strip().lower() in ('y','yes'):
+        table=int(input('独立路由表编号 (200): ').strip() or '200')
+        source=input('源地址或网段（例如 192.168.100.20/32）: ').strip()
+    return settings(selected, method == 'dhcp', address, gateway, [dns] if dns else [],
+                    management=management,family=family,management_target=target,metric=metric,
+                    default_route=default,route_table=table,source=source)
 
 
 def main(argv=None):
@@ -476,6 +545,13 @@ def main(argv=None):
     group.add_argument('--address', help='Static IPv4 with prefix length.')
     parser.add_argument('--gateway')
     parser.add_argument('--dns', action='append', help='DNS IP; repeat or use a comma-separated list.')
+    parser.add_argument('--management', action='store_true', help='Use this interface for management readiness.')
+    parser.add_argument('--family', choices=('ipv4','ipv6','both'), default='ipv4')
+    parser.add_argument('--management-target', help='Management destination IP used for route/source validation.')
+    parser.add_argument('--metric', type=int)
+    parser.add_argument('--default-route', choices=('yes','no'))
+    parser.add_argument('--route-table', type=int)
+    parser.add_argument('--source', help='Source IPv4 prefix for an explicit policy-routing table.')
     parser.add_argument('--rollback-after', type=int, default=90, help='Confirmation window in seconds (30–600).')
     parser.add_argument('--transaction', help='Network transaction ID to confirm or roll back.')
     parser.add_argument('--plan', action='store_true', help='Preview without changing configuration.')
@@ -501,6 +577,11 @@ def main(argv=None):
             value = wizard(network, args.interface)
         else:
             value = settings(network.choose_interface(args.interface), args.dhcp, args.address, args.gateway, args.dns)
+        if args.management or args.family != 'ipv4' or args.management_target or args.metric is not None or args.default_route or args.route_table or args.source:
+            value = settings(value['interface'], value['method']=='dhcp', value['address'], value['gateway'], value['dns'],
+                             management=args.management, family=args.family, management_target=args.management_target,
+                             metric=args.metric, default_route=None if args.default_route is None else args.default_route=='yes',
+                             route_table=args.route_table, source=args.source)
         result = network.plan(value, args.rollback_after)
         if not args.plan:
             if not args.json:

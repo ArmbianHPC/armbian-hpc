@@ -11,8 +11,7 @@ import subprocess
 
 
 def names(version, model, distribution, kernel, filesystem, build_date):
-    if not re.fullmatch(r'\d+\.\d+\.\d+', version):
-        raise ValueError('Version must be MAJOR.MINOR.PATCH')
+    version_key('v' + version)
     if any(not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9.-]*', value)
            for value in (model, distribution, kernel, filesystem)):
         raise ValueError('Invalid firmware filename component')
@@ -21,6 +20,45 @@ def names(version, model, distribution, kernel, filesystem, build_date):
     datetime.strptime(build_date, '%Y%m%d')
     suffix = '_'.join((version, model, distribution, kernel, filesystem, build_date))
     return ['armhpc_' + suffix + '.img.xz', 'armhpc-ota_' + suffix + '.tar.xz']
+
+
+
+def version_key(tag):
+    match = re.fullmatch(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-r([1-9][0-9]*))?', tag)
+    if not match:
+        raise ValueError('Release tag must be vA.B.C or vA.B.C-rN with lowercase r and positive N')
+    return tuple(int(value or 0) for value in match.groups())
+
+
+def check_sequence(tag, published_tags):
+    current = version_key(tag)
+    known = {}
+    for previous in published_tags:
+        try:
+            known[previous] = version_key(previous)
+        except ValueError:
+            continue
+    if tag in known:
+        return
+    if not known:
+        return
+    latest = max(known.values())
+    base, old_base = current[:3], latest[:3]
+    if base == old_base:
+        if current[3] <= latest[3]:
+            raise ValueError('Revision must increase; intermediate r numbers need not be published')
+        return
+    major, minor, patch = old_base
+    if base not in ((major, minor, patch + 1), (major, minor + 1, 0), (major + 1, 0, 0)):
+        raise ValueError('Base versions must be consecutive: increment patch, minor with patch zero, or major with minor/patch zero')
+
+
+def release_history(repo):
+    pages = json.loads(subprocess.check_output(
+        ['gh', 'api', '--paginate', '--slurp', f'repos/{repo}/releases?per_page=100'],
+        text=True, encoding='utf-8'))
+    return [row['tag_name'] for page in pages for row in page
+            if not row.get('draft') and not row.get('prerelease')]
 
 
 def sha256(path):
@@ -38,8 +76,7 @@ def release(repo, tag, release_id=None):
 
 
 def publish_packages(repo, tag, paths, notes, *, apply=False, release_id=None, publish=False):
-    if not re.fullmatch(r'v\d+\.\d+\.\d+', tag):
-        raise ValueError('Release tag must be vMAJOR.MINOR.PATCH')
+    version_key(tag)
     notes = Path(notes)
     if not notes.is_file() or not notes.with_name(notes.stem + '.zh-CN.md').is_file():
         raise ValueError('English and Simplified Chinese release notes are required')
@@ -48,6 +85,8 @@ def publish_packages(repo, tag, paths, notes, *, apply=False, release_id=None, p
     if not all(p.is_file() and not p.is_symlink() and p.stat().st_size for p in paths):
         raise ValueError('All packages must be nonempty regular files before publishing')
     records = [{'file': p.name, 'size': p.stat().st_size, 'sha256': sha256(p)} for p in paths]
+    if publish:
+        check_sequence(tag, release_history(repo))
     current = release(repo, tag, release_id)
     release_id = current['id']
     expected = {p.name for p in paths}
@@ -129,8 +168,7 @@ def manifest_files(path, tag):
 def update(repo, tag, directory, model=None, distribution='bookworm', kernel=None,
            filesystem='squashfs', build_date=None, notes=None, apply=False,
            manifest=None, release_id=None, publish=False):
-    if not re.fullmatch(r'v\d+\.\d+\.\d+', tag):
-        raise ValueError('Release tag must be vMAJOR.MINOR.PATCH')
+    version_key(tag)
     directory = Path(directory).resolve(strict=True)
     if not manifest:
         raise ValueError('Supply --manifest with every model and both packages; per-model updates are unsafe')

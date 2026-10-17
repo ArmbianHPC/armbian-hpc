@@ -19,6 +19,9 @@ def main():
     from armhpc_ota.publish import filesystem,validate_staging
     from armhpc_ota.io import sha256,atomic_json
     from armhpc_ota.metadata import validate_manifest
+    sys.path.insert(0,str(a.framework))
+    from framework.compatibility import check_sources
+    compatibility=check_sources(repo,a.framework)
     assert os.geteuid()==0 and a.work.is_absolute() and a.work!=Path('/')
     assert not a.work.exists(),'Use a new work directory; never overwrite a staging tree'
     assert not a.output.exists(),'Use a new output directory'
@@ -58,13 +61,14 @@ def main():
             dest=a.output/(target+'-'+name);shutil.copy2(source,dest);role=target+'-'+name
             artifacts.append({'id':role,'role':role,'sha256':expected[name],'size':dest.stat().st_size,'url':'https://pending.invalid/'+role});files[role]=dest.name
     m={'kind':'release','protocol':1,'release':a.release,'sequence':a.sequence,'board':'wxy-oect-original','architecture':'arm64',
-       'distribution':'bookworm','layout':'oect-squashfs-ab-v2','anchor_abi':'armhpc-anchor-squashfs-v2','minimum_agent':__version__,
+       'distribution':'bookworm','layout':'oect-squashfs-ab-v2','anchor_abi':'armhpc-anchor-squashfs-v2','minimum_agent':compatibility['minimum_agent'],
        'kernels':{'system':kernel,'rescue':kernel},'packages':{'system':[],'rescue':[]},'artifacts':artifacts}
     for target,root in roots.items():
         inventory=subprocess.check_output(['chroot',str(root),'dpkg-query','-W','-f=${binary:Package}\t${Version}\t${db:Status-Status}\n'],text=True)
         m['packages'][target]=[{'name':r.split('\t')[0],'version':r.split('\t')[1]} for r in inventory.splitlines() if len(r.split('\t'))==3 and r.split('\t')[2]=='installed']
     validate_manifest(m);atomic_json(a.output/'prepared-release.json',{'validated_staging':True,'manifest':m,'files':files})
-    atomic_json(a.output/'BUILD-RESULT.json',{'release':a.release,'agent_version':__version__,'kernel_unchanged':True,'dtb_unchanged':True,
+    atomic_json(a.output/'BUILD-RESULT.json',{'release':a.release,'agent_version':__version__,'source_versions':compatibility['source_versions'],
+                'compatibility':compatibility,'kernel_unchanged':True,'dtb_unchanged':True,
                 'raw_initramfs_unchanged':True,'hardware_verified':False,'full_img_built':False,'rescue_bytes':expanded_size,
                 'boot_sha256':expected,'prepared_descriptor':str(a.output/'prepared-release.json')})
     print(json.dumps({'prepared':str(a.output),'release':a.release,'hardware_verified':False}),flush=True)

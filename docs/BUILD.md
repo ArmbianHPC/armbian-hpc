@@ -2,7 +2,7 @@
 
 [简体中文](BUILD.zh-CN.md)
 
-Check out matching framework and OTA commits. Use `scripts/image-framework.py list`, `validate`, `plan`, `stage` and `fetch-sources` to prepare target inputs. Build outside source repositories.
+Check out compatible framework and OTA commits; their release versions may differ. See [independent versions](COMPATIBILITY.md). Use `scripts/image-framework.py list`, `validate`, `plan`, `stage` and `fetch-sources` to prepare target inputs. Build outside source repositories.
 
 OECT uses GPT and ext4 BOOT; OESP uses a separately audited Amlogic reservation, MBR and FAT32 BOOT. Both targets provide SquashFS Rescue A/B, shared ext4, and a SATA ext4 normal system and DATA partition. Use the board-specific kernel/root preparation and assembly entries under `tools/build`.
 
@@ -26,3 +26,5 @@ PYTHONPATH=../armhpc-ota/src python3 -m pytest tests
 The complete suite uses pytest to collect both unittest and function-based checks. Firmware publish uses a single manifest listing both files for every model, including their exact sizes, hashes and image redistribution evidence. See [release policy](RELEASE.md).
 
 For offline builds, pass --from-directory VERIFIED_FIRMWARE_DIRECTORY to firmware preparation. The input bytes must match the same board SHA256 and license record; this option does not change trust or permit unreviewed firmware.
+
+For an explicit repeat build from previously verified roots, the private firmware build input can set `offline_dependencies: true`. The kernel-root rebase then verifies that every declared dependency is installed and records its exact version in each root. Missing packages fail the build; network updates remain the default.

@@ -135,7 +135,8 @@ def validate_registry(value):
 
 
 def validate_download_source(source):
-    if not isinstance(source, dict) or set(source) != {'kind', 'installer_url', 'artifact_url', 'registry_mirrors'}:
+    required={'kind','installer_url','artifact_url','registry_mirrors'}
+    if not isinstance(source, dict) or not required<=set(source) or set(source)-required-{'ca_file','offline_directory','default_registry_fallback'}:
         raise SetupError('保留的下载来源不完整，请重新选择来源。')
     if source['kind'] not in ('official', 'mirror'):
         raise SetupError('下载来源类型无效。')
@@ -181,7 +182,12 @@ def collect_download_source(policy, previous=None):
             old = previous.get('registry_mirrors', {}).get(registry, [])
             endpoint = ask(f'{registry} 的镜像站 HTTPS 地址', old[0] if old else None, validate_download_url)
             source['registry_mirrors'][registry] = [endpoint.rstrip('/')]
-        print('已配置的仓库只使用指定镜像站；其他仓库按其原始地址下载。')
+        print('默认端点回退选项只影响上面登记的仓库；未登记的仓库仍使用原始地址。')
+    if yes('允许已配置镜像仓库回退到默认端点',previous.get('default_registry_fallback',False)):
+        source['default_registry_fallback']=True
+    if yes('使用已准备的本地同版本程序和离线镜像目录',bool(previous.get('offline_directory'))):
+        source['offline_directory']=ask('包含 install.sh、SHA256、程序和 airgap 包的目录',previous.get('offline_directory'),
+            lambda value: Path(value).is_absolute() and Path(value).is_dir() or (_ for _ in ()).throw(ValueError('请输入现有绝对目录')))
     validate_download_source(source)
     return source
 
@@ -210,7 +216,17 @@ def validate_registry_list(value):
         validate_registry(registry.strip())
 
 
-def registry_text(plan):
+def registry_text(plan,policy=None):
+    if policy:
+        folder=Path(policy['configuration_dir'])
+        record=folder/'registry-managed.json'
+        if record.is_file():
+            managed=json.loads(record.read_text());path=folder/'registries.yaml'
+            if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=managed['sha256']:
+                raise SetupError('已导入的 registry 配置发生变化，请先检查或重新导入。')
+            from kube_registry import validate
+            validate(path.read_text(),managed.get('allow_http',False))
+            return path.read_text()
     mirrors = plan['download_source']['registry_mirrors']
     return json.dumps({'mirrors': {name: {'endpoint': endpoints} for name, endpoints in mirrors.items()}},
                       ensure_ascii=False, indent=2) + '\n'
@@ -287,7 +303,7 @@ def collect_plan(policy, previous=None):
     plan = {
         'role': role,
         'node_name': ask('唯一节点名称', default_name, validate_name),
-        'version': ask('K3s 完整版本（入群时与控制节点一致）', previous.get('version', policy['default_version']), validate_version),
+        'version': ask('K3s 完整版本（入群时与控制节点一致）', previous.get('version') or (None if role in ('agent','server-join') else policy['default_version']), validate_version),
         'server': '',
         'server_options': {},
     }
@@ -313,8 +329,13 @@ def validate_choice(value):
 def config_text(policy, plan):
     values = {'node-name': plan['node_name'], 'data-dir': policy['data_dir'],
               'private-registry': policy['configuration_dir'] + '/registries.yaml'}
+    if plan.get('management_interface'):
+        values['flannel-iface'] = plan['management_interface']
+        values['node-ip'] = plan['node_ip']
     if plan['download_source']['registry_mirrors']:
-        values['disable-default-registry-endpoint'] = True
+        values['disable-default-registry-endpoint'] = not plan['download_source'].get('default_registry_fallback',False)
+    imported=Path(policy['configuration_dir'])/'registry-managed.json'
+    if imported.is_file():values['disable-default-registry-endpoint']=json.loads(imported.read_text())['default_fallback']=='deny'
     if plan['server']:
         values.update({'server': plan['server'], 'token-file': policy['configuration_dir'] + '/join-token'})
     if plan['role'] != 'agent':
@@ -349,7 +370,11 @@ def check_host(policy):
     if not controllers.exists() or 'memory' not in controllers.read_text().split():
         raise SetupError('目标镜像需要启用 cgroup v2 的 memory 控制器。')
     if any(line.split() and line.split()[0] != 'Filename' for line in Path('/proc/swaps').read_text().splitlines()):
-        raise SetupError('请先关闭 swap，再运行配置引导。')
+        from swap_config import status as swap_status
+        if not swap_status().get('configured'):
+            raise SetupError('发现未登记的 swap；请先导入或关闭，再运行配置引导。')
+    from kube_runtime import preflight
+    preflight(policy,installing=True)
 
 
 def ensure_bind(source, target, fstab_lines, data_mountpoint):
@@ -380,6 +405,30 @@ def valid_data_entry(fields, policy, mounted_uuid):
     return len(fields) >= 4 and fields[0] in sources and fields[2] == policy['data_filesystem']
 
 
+def restore_profiles(policy,plan,service):
+    data=Path(policy['data_mountpoint'])
+    profiles=data/'node-config/armhpc'
+    resources=profiles/'resources.json';swap=profiles/'swap.json'
+    if not resources.is_file() and not swap.is_file():return
+    version=re.fullmatch(r'v(\d+)\.(\d+)\.(\d+)\+k3s\d+',plan['version'])
+    if not version or tuple(map(int,version.groups()))<(1,32,0):
+        raise SetupError('已保存的 kubelet 配置档要求 K3s v1.32 或以上；保留原版本或先审核配置档适配。')
+    if resources.is_file():
+        value=json.loads(resources.read_text())
+        if value.get('schema_version')!=1 or not isinstance(value.get('configuration'),dict):
+            raise SetupError('资源配置档损坏，请先检查 DATA 中的原文件和备份。')
+        private_write(Path(policy['data_dir'])/'agent/etc/kubelet.conf.d/85-armhpc-resources.conf',
+                      json.dumps(value['configuration'],indent=2)+'\n')
+    if swap.is_file():
+        value=json.loads(swap.read_text())
+        if value.get('schema_version')!=1 or value.get('profile') not in ('disabled','host-noswap','limited'):
+            raise SetupError('swap 配置档损坏，请先检查 DATA 中的原文件和备份。')
+        from swap_config import write_kubelet
+        write_kubelet(data,value)
+        private_write('/etc/systemd/system/'+service+'.service.d/30-armhpc-swap.conf',
+            '[Unit]\nRequires=armhpc-swap.service\nAfter=armhpc-swap.service\n\n[Service]\nMemorySwapMax=0\n',0o644)
+
+
 def prepare_storage(policy, plan):
     config_dir = Path(policy['configuration_dir'])
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -396,22 +445,32 @@ def prepare_storage(policy, plan):
         if not valid_data_entry(fields, policy, mounted_uuid):
             raise SetupError(f'fstab 中 {mountpoint} 与预期数据分区不一致。')
     if not data_entries:
-        lines.append(f"LABEL={policy['data_label']} {mountpoint} {policy['data_filesystem']} defaults,noatime 0 2")
+        if not mounted_uuid:raise SetupError('DATA UUID is missing.')
+        lines.append(f"UUID={mounted_uuid} {mountpoint} {policy['data_filesystem']} defaults,noatime,nofail,x-systemd.device-timeout=10s 0 2")
+    else:
+        for entry in data_entries:
+            fields=entry.split();fields[0]='UUID='+mounted_uuid
+            lines[lines.index(entry)]=' '.join(fields)
     ensure_bind(policy['kubelet_source'], policy['kubelet_target'], lines, mountpoint)
     ensure_bind(policy['node_identity_source'], policy['node_identity_target'], lines, mountpoint)
     private_write('/etc/fstab', '\n'.join(lines) + '\n', 0o644)
     config_dir.joinpath('node').chmod(0o700)
-    private_write(config_dir / 'config.yaml', config_text(policy, plan))
-    private_write(config_dir / 'registries.yaml', registry_text(plan))
+    from kube_runtime import check_configuration
+    generated = config_text(policy, plan)
+    check_configuration(generated)
+    private_write(config_dir / 'config.yaml', generated)
+    private_write(config_dir / 'registries.yaml', registry_text(plan,policy))
     private_write('/etc/sysctl.d/90-k3s.conf', 'net.ipv4.ip_forward=1\nnet.bridge.bridge-nf-call-iptables=1\nnet.bridge.bridge-nf-call-ip6tables=1\n', 0o644)
+    private_write('/etc/modules-load.d/90-k3s.conf','overlay\nbr_netfilter\nvxlan\n',0o644)
     run(['modprobe', 'overlay'])
     run(['modprobe', 'br_netfilter'])
     run(['modprobe', 'vxlan'])
     run(['sysctl', '-p', '/etc/sysctl.d/90-k3s.conf'])
     service = 'k3s-agent' if plan['role'] == 'agent' else 'k3s'
+    restore_profiles(policy,plan,service)
     dropin = Path('/etc/systemd/system') / (service + '.service.d/10-image-framework-storage.conf')
     required_mounts = ' '.join((mountpoint, policy['kubelet_target'], policy['node_identity_target']))
-    private_write(dropin, f'[Unit]\nWants=network-online.target\nAfter=network-online.target\nRequiresMountsFor={required_mounts}\n\n[Service]\nExecStartPre=/usr/local/sbin/armhpc-kube check\n', 0o644)
+    private_write(dropin, f'[Unit]\nWants=network-online.target\nRequires=armhpc-state.service armhpc-runtime.service armhpc-management-ready.service\nAfter=network-online.target armhpc-runtime.service armhpc-management-ready.service\nRequiresMountsFor={required_mounts}\n\n[Service]\nExecStartPre=/usr/local/sbin/armhpc-kube check\n', 0o644)
     return service
 
 
@@ -473,10 +532,29 @@ def wait_for_service(policy, service):
     raise SetupError(f'{service} 启动超时。已保留配置，可检查网络后重试。')
 
 
+def management_status():
+    from network_ready import inspect,policy
+    return inspect(policy())
+
+
+def prepare_recovery_resources(policy,plan,installer):
+    from kube_artifacts import prepare
+    return prepare(policy,plan,installer,installer_settings(policy,plan['download_source'])['installer_sha256'])
+
+
+def capture_installation(policy,plan):
+    from kube_runtime import capture,mark_joined
+    capture(policy,plan);mark_joined(policy,plan)
+
+
 def install(policy, state, token):
     plan = state['plan']
     source = plan['download_source']
     validate_download_source(source)
+    management = management_status()
+    if management['ready']:
+        plan['management_interface'] = management['policy']['interface']
+        plan['node_ip'] = next(iter(management['addresses'].values()))[0]
     state['status'] = 'installing'
     save_state(policy, state)
     service = prepare_storage(policy, plan)
@@ -484,7 +562,7 @@ def install(policy, state, token):
         private_write(Path(policy['configuration_dir']) / 'join-token', token + '\n')
     if plan['server'] and not Path(policy['configuration_dir'], 'join-token').is_file():
         raise SetupError('保留的加入凭据缺失，请重新提供配置。')
-    print('\n下载并校验安装脚本，随后下载 K3s 程序。容器镜像由 containerd 在线拉取。')
+    print('\n校验并保留所选版本的安装脚本、K3s 程序和对应架构离线镜像包。')
     environment = os.environ.copy()
     for key in list(environment):
         if key.startswith(('K3S_', 'INSTALL_K3S_')) or key == 'ARCH':
@@ -493,13 +571,18 @@ def install(policy, state, token):
         'INSTALL_K3S_VERSION': plan['version'],
         'INSTALL_K3S_EXEC': 'agent' if plan['role'] == 'agent' else 'server',
         'INSTALL_K3S_SKIP_START': 'true',
+        'INSTALL_K3S_SKIP_DOWNLOAD':'true',
         'K3S_CONFIG_FILE': policy['configuration_dir'] + '/config.yaml',
         'ARCH': policy['installer_arch'],
     })
     environment.update(download_environment(source))
     with tempfile.TemporaryDirectory(prefix='armhpc-k3s-configuration-', dir='/run') as directory:
         installer = Path(directory) / 'install.sh'
-        download_installer(installer_settings(policy, source), installer)
+        if source.get('offline_directory'):
+            shutil.copyfile(Path(source['offline_directory'])/'install.sh',installer)
+        else:download_installer(installer_settings(policy, source), installer)
+        state['artifacts']=prepare_recovery_resources(policy,plan,installer)
+        save_state(policy,state)
         run(['sh', str(installer)], env=environment, timeout=900)
     state['status'] = 'starting'
     save_state(policy, state)
@@ -508,6 +591,7 @@ def install(policy, state, token):
     run(['systemctl', 'restart', '--no-block', service])
     wait_for_service(policy, service)
     run(['systemctl', 'is-active', '--quiet', service])
+    capture_installation(policy,plan)
     state['status'] = 'installed'
     save_state(policy, state)
     private_write(policy['completion_marker'], 'configured\n', 0o644)
@@ -536,8 +620,14 @@ def main():
             raise SetupError("K3s 管理尚未完成；请继续原 uninstall、reinstall 或 clear 操作后再安装。")
     if not args.preview and os.geteuid() != 0:
         os.execvp('sudo', ['sudo', '--', '/usr/local/sbin/armhpc-kube', 'configuration', *sys.argv[1:]])
-    if args.auto and Path(policy['completion_marker']).exists() and os.access('/usr/local/bin/k3s', os.X_OK):
-        return
+    if args.auto and Path(policy['completion_marker']).exists():
+        from kube_runtime import installed, mark_joined
+        actual = installed(policy)
+        if actual['ready']:
+            saved = json.loads(Path(policy['state_file']).read_text())
+            mark_joined(policy, saved['plan'])
+            return
+        print('节点安装记录与实际资源不一致：' + ', '.join(actual['errors']))
     lock = None
     state = None
     if not args.preview:

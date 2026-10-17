@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-only
 """Build the pinned ARM64 Meson kernel and the OES1PLUS v2.2 device tree."""
-import argparse, hashlib, json, os, shutil, subprocess, tarfile
+import argparse, hashlib, json, os, shutil, subprocess, tarfile, sys
 from pathlib import Path
 
 VERSION = '6.12.111'
@@ -48,7 +48,12 @@ def main():
     if override not in fan_text:
         assert fan_text.count(anchor)==1
         fan_source.write_text(fan_text.replace(anchor,override+anchor))
-    options = ['ARCH=arm64', 'CROSS_COMPILE=aarch64-linux-gnu-', 'O='+str(obj), 'LOCALVERSION=-armhpc-meson64']
+    if sha(fan_source)!='4513716d46e81fecaf10a857c864410f7766e128727329fd99b56ad0cd30cd44':
+        raise ValueError('Cached GPIO fan source differs from the pinned kernel and thermal safety adaptation')
+    if sha(source/'drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c')!=sha(a.project/'adapters/boards/wxy-oesp-v22/patches/dwmac-meson8b.c'):
+        raise ValueError('Cached GMAC driver differs from the reviewed board source; use a fresh kernel work directory')
+    project_version = (a.project/'VERSION').read_text().strip()
+    options = ['ARCH=arm64', 'CROSS_COMPILE=aarch64-linux-gnu-', 'O='+str(obj), 'LOCALVERSION=-armhpc-meson64-'+project_version]
     if not (obj/'.config').exists():
         run('make', *options, 'defconfig', cwd=source)
         cfg = [str(source/'scripts/config'), '--file', str(obj/'.config')]
@@ -73,13 +78,23 @@ def main():
         '--enable', 'USB_DWC2', '--enable', 'USB_DWC2_DUAL_ROLE', '--enable', 'USB_GADGET',
         '--enable', 'USB_LIBCOMPOSITE', '--enable', 'USB_CONFIGFS', '--enable', 'USB_CONFIGFS_ACM',
         '--enable', 'USB_ROLE_SWITCH')
+    sys.path.insert(0, str(a.project.resolve()))
+    from framework.kernel_baseline import merge, validate, module_manifest
+    merge(a.project, source, obj, run)
     run('make', *options, 'olddefconfig', cwd=source)
+    configuration = validate(a.project, obj/'.config')
     env = {**os.environ, 'KBUILD_BUILD_USER':'armhpc', 'KBUILD_BUILD_HOST':'builder', 'KBUILD_BUILD_VERSION':'1'}
     run('make', *options, '-j'+str(a.jobs), 'Image', 'modules', 'amlogic/meson-g12b-s922x-armhpc-oes1plus-v22.dtb', cwd=source, env=env)
     release = subprocess.check_output(['make', '-s', *options, 'kernelrelease'], cwd=source, text=True).strip()
     modules = work/'modules'; modules.mkdir(exist_ok=True)
     run('make', *options, 'INSTALL_MOD_PATH='+str(modules), 'INSTALL_MOD_STRIP=1', 'modules_install', cwd=source)
-    result = {'kernel_release':release,'source_version':VERSION,'source_sha256':SOURCE_SHA256,
+    inventory=module_manifest(modules,release)
+    (work/'MODULES.json').write_text(json.dumps(inventory,indent=2)+'\n')
+    shutil.copy2(obj/'.config', work/'kernel.config')
+    result = {**configuration, 'kernel_release':release,'source_version':VERSION,'source_sha256':SOURCE_SHA256,
+              'modules_sha256':inventory['sha256'],'dts_source_sha256':sha(dts),
+              'driver_sources':{name:sha(source/name) for name in (
+                  'drivers/hwmon/gpio-fan.c','drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c')},
               'image_sha256':sha(obj/'arch/arm64/boot/Image'),
               'dtb_sha256':sha(obj/'arch/arm64/boot/dts/amlogic/meson-g12b-s922x-armhpc-oes1plus-v22.dtb')}
     (work/'KERNEL-RESULT.json').write_text(json.dumps(result, indent=2)+'\n')

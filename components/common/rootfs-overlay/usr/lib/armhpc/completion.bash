@@ -26,7 +26,8 @@ _armhpc_completion_value_option()
     case $1 in
         --interface|--seconds|--period-ms|--heartbeat|--error|--rootfs|--username|--public-key-file|--policy|--disk|\
         --release|--manifest|--target|--anchor-manifest|--request-id|--job|--interval|--url|--tools-source|--ca|--origin|\
-        --bundle|--phase|--exported-backup-sha256|--kind|--sata|--test-id|--address|--gateway|--dns|--rollback-after|--k3s-version|--transaction|--mode) return 0 ;;
+        --bundle|--phase|--exported-backup-sha256|--kind|--sata|--test-id|--address|--gateway|--dns|--rollback-after|--k3s-version|--transaction|--mode|\
+        --family|--management-target|--metric|--default-route|--route-table|--source|--role|--memory-gib|--profile|--size-gib|--import-existing|--management-cidr|--cluster-cidr|--ssh-port|--file|--default-fallback|--image|--fingerprint) return 0 ;;
         *) return 1 ;;
     esac
 }
@@ -37,6 +38,13 @@ _armhpc_complete_value()
     local state=${_ARMHPC_COMPLETION_STATE_ROOT:-/var/lib/armhpc/ota}
     case $1 in
         --mode) _armhpc_complete_words auto on off ;;
+        --family) _armhpc_complete_words ipv4 ipv6 both ;;
+        --default-route) _armhpc_complete_words yes no ;;
+        --profile) _armhpc_complete_words disabled host-noswap limited ;;
+        --role) _armhpc_complete_words worker server; [[ ${COMP_WORDS[1]-} != firewall ]] || _armhpc_complete_words server-etcd ;;
+        --memory-gib) _armhpc_complete_words 2 4 ;;
+        --size-gib) _armhpc_complete_words 16 8 4 ;;
+        --default-fallback) _armhpc_complete_words allow deny ;;
         --target) _armhpc_complete_words all system rescue ;;
         --phase) _armhpc_complete_words prepare commit ;;
         --kind) _armhpc_complete_words expire direct-restart panic reboot ;;
@@ -48,7 +56,7 @@ _armhpc_complete_value()
         --rollback-after) _armhpc_complete_words 90 120 300 ;;
         --k3s-version) _armhpc_complete_words v1.37.1+k3s1 ;;
         --rootfs) _armhpc_complete_path d ;;
-        --manifest|--anchor-manifest|--bundle|--ca|--public-key-file|--policy|--disk) _armhpc_complete_path ;;
+        --manifest|--anchor-manifest|--bundle|--ca|--public-key-file|--policy|--disk|--import-existing|--file) _armhpc_complete_path ;;
         --interface)
             for item in "${_ARMHPC_COMPLETION_NET_ROOT:-/sys/class/net}"/*; do
                 [[ -d $item/device ]] || continue
@@ -125,13 +133,41 @@ _armhpc_complete()
     if [[ -z $command ]]; then
         if [[ $cur != -* ]]; then
             case $program in
-                armhpc) _armhpc_complete_words hostname network fan identify watchdog usb-console ota configuration firstrun led rescue ;;
-                armhpc-rescue) _armhpc_complete_words fan emmc identify watchdog usb-console ota configuration status install restore provision firstrun led boot reboot console ;;
-                armhpc-kube) _armhpc_complete_words configuration check uninstall reinstall clear ;;
+                armhpc) _armhpc_complete_words hostname network fan identify watchdog usb-console ota configuration firstrun led rescue state auth swap health resources firewall ;;
+                armhpc-rescue) _armhpc_complete_words fan emmc identify watchdog usb-console ota configuration status install restore provision firstrun led boot reboot console health ;;
+                armhpc-kube) _armhpc_complete_words configuration check uninstall reinstall clear registry ;;
             esac
         fi
     else
         case $command in
+            state)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status reconcile register
+                options+=(--json --apply --yes --manifest)
+                ;;
+            auth)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status keys key-add key-remove password key-only confirm rollback
+                options+=(--json --yes --public-key-file --transaction --fingerprint)
+                ;;
+            swap)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status set stop
+                options+=(--json --yes --profile --size-gib --import-existing --allow-degraded-noswap --apply)
+                ;;
+            health)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status collect
+                options+=(--json)
+                ;;
+            resources)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status set
+                options+=(--role --memory-gib --apply --yes --json)
+                ;;
+            registry)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status import
+                options+=(--file --default-fallback --allow-http --apply --yes --json)
+                ;;
+            firewall)
+                [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status set confirm rollback
+                options+=(--role --management-cidr --cluster-cidr --ssh-port --nodeport --apply --yes --json --transaction)
+                ;;
             fan)
                 [[ -n $operation || $cur == -* ]] || _armhpc_complete_words status set
                 options+=(--json --yes)
@@ -146,7 +182,7 @@ _armhpc_complete()
                 options+=(--json)
                 case $operation in
                     show) options+=(--interface) ;;
-                    set) options+=(--interface --dhcp --address --gateway --dns --rollback-after --plan --yes) ;;
+                    set) options+=(--interface --dhcp --address --gateway --dns --rollback-after --plan --yes --management --family --management-target --metric --default-route --route-table --source) ;;
                     configure) options+=(--interface --rollback-after --yes) ;;
                     confirm|rollback) options+=(--transaction --yes) ;;
                 esac
@@ -187,7 +223,7 @@ _armhpc_complete()
             ota)
                 options+=(--json --yes)
                 if [[ -z $operation ]]; then
-                    [[ $cur == -* ]] || _armhpc_complete_words bootstrap check plan download apply status logs cancel recover source doctor retry tools receive boot
+                    [[ $cur == -* ]] || _armhpc_complete_words bootstrap check plan download apply status logs cancel recover source doctor retry tools receive boot storage
                     options+=(--version)
                 else
                     case $operation in
@@ -207,14 +243,20 @@ _armhpc_complete()
                             [[ -n $action || $cur == -* ]] || _armhpc_complete_words status update
                             [[ $action != update ]] || options+=(--bundle --rollback --request-id)
                             ;;
+                        storage)
+                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words status export acknowledge plan cleanup stage
+                            options+=(--backup-id --inventory-sha256 --archive-sha256 --plan-id --item --bytes)
+                            ;;
                         receive) options+=(--manifest --target --request-id --phase) ;;
                         boot)
-                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words plan apply status rollback restore
+                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words plan enter apply status rollback restore resume-system
                             case $action in
                                 plan) options+=(--bundle) ;;
+                                enter) options+=(--bundle --request-id --yes) ;;
                                 apply) options+=(--bundle --request-id --exported-backup-sha256 --commit) ;;
                                 rollback) options+=(--request-id) ;;
                                 restore) options+=(--request-id --execute --yes) ;;
+                                resume-system) options+=(--request-id --yes) ;;
                             esac
                             ;;
                     esac

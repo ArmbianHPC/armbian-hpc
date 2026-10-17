@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+[Unit]
+Description=Restore registered ARMHPC node resources
+After=local-fs.target armhpc-firstboot.service armhpc-firewall.service
+RequiresMountsFor=/data
+ConditionPathExists=!/etc/armhpc/rescue-environment
+Before=armhpc-runtime.service k3s.service k3s-agent.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/lib/armhpc/node_state.py _boot
+TimeoutStartSec=45
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

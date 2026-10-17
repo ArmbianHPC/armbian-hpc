@@ -356,7 +356,8 @@ def resolve(root, identifier, *, verify_sources=False, require_sources=True):
                 f'无效软件包名称：{package}')
         require(not re.match(r'^(armbian-firmware|linux-firmware|firmware-)', package),
                 '固件包必须通过板卡逐文件审核清单提供。')
-    requirements = {}
+    from .kernel_baseline import requirements as shared_kernel_requirements
+    requirements = shared_kernel_requirements(root) if workload['component'] == 'k3s' else {}
     for kind in ('backend', 'soc', 'board', 'os', 'storage', 'workload'):
         for symbol, allowed_values in records[kind].get('kernel_requirements', {}).items():
             require(re.fullmatch(r'CONFIG_[A-Z0-9_]+', symbol)

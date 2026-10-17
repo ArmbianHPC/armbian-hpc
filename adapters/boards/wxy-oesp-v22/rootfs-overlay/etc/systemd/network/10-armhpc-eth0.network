@@ -2,6 +2,10 @@
 [Match]
 Name=eth0
 
+[Link]
+RequiredForOnline=routable
+RequiredFamilyForOnline=ipv4
+
 [Network]
 DHCP=yes
 IPv6AcceptRA=yes
@@ -10,4 +14,7 @@ IPv6AcceptRA=yes
 RouteMetric=100
 
 [IPv6AcceptRA]
+RouteMetric=100
+
+[DHCPv6]
 RouteMetric=100

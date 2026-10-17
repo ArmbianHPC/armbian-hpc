@@ -21,7 +21,7 @@ def package(project, ota_source, package_root, image, output, trust, stem, verif
             reuse_compressed_image=False):
     project, ota_source, package_root, image, output, trust = (
         Path(p).resolve() for p in (project, ota_source, package_root, image, output, trust))
-    if not re.fullmatch(r'armhpc_\d+\.\d+\.\d+_[a-zA-Z0-9.-]+_[a-zA-Z0-9.-]+_\d+\.\d+\.\d+_[a-zA-Z0-9.-]+_\d{8}', stem):
+    if not re.fullmatch(r'armhpc_\d+\.\d+\.\d+(?:-r[1-9][0-9]*)?_[a-zA-Z0-9.-]+_[a-zA-Z0-9.-]+_\d+\.\d+\.\d+_[a-zA-Z0-9.-]+_\d{8}', stem):
         raise ValueError('Use the version/model/distribution/kernel/filesystem/date firmware stem')
     if output.is_relative_to(project) or output.is_relative_to(ota_source) or output.is_relative_to(package_root):
         raise ValueError('Build outside the source repositories and input staging tree')

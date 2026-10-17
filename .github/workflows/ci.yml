@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ArmbianHPC/armhpc-ota
-          ref: 7709bb1a01cad3fb19eff6b6e2045c8539d45ecd
+          ref: 90bdb17533b28f68953c90fb9b4337ab962ace37
           path: armhpc-ota
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -38,6 +38,7 @@ jobs:
             armbian-hpc/requirements-test.txt
       - run: python -m pip install -r requirements-ci.txt
       - run: python tools/check-maintenance.py
+      - run: python -m framework.compatibility --ota-source ../armhpc-ota --framework-source .
       - run: python tools/license-audit.py --output "$RUNNER_TEMP/license-inventory.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -61,7 +62,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ArmbianHPC/armhpc-ota
-          ref: 7709bb1a01cad3fb19eff6b6e2045c8539d45ecd
+          ref: 90bdb17533b28f68953c90fb9b4337ab962ace37
           path: armhpc-ota
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

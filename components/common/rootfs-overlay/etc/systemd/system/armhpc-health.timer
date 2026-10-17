@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+[Unit]
+Description=Sample ARMHPC host health
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=60
+AccuracySec=5
+
+[Install]
+WantedBy=timers.target

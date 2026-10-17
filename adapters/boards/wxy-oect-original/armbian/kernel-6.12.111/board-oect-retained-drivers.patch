@@ -1,0 +1,173 @@
+# SPDX-License-Identifier: GPL-2.0-only
+From: ARMHPC contributors
+Subject: [PATCH] retain reviewed Armbian storage, GMAC, regulator and thermal adaptations
+Origin: retained OECT Linux 6.12.111 source distributed with ARMHPC v1.0.0
+
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1367,6 +1367,14 @@
+ {
+ 	if (host->ios.power_mode == MMC_POWER_OFF)
+ 		return;
++
++	mmc_set_initial_signal_voltage(host);
++
++	/*
++	 * This delay should be sufficient to allow the power supply
++	 * to reach the minimum voltage.
++	 */
++	mmc_delay(host->ios.power_delay_ms);
+ 
+ 	mmc_pwrseq_power_off(host);
+ 
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -5889,26 +5889,14 @@
+ static int stmmac_change_mtu(struct net_device *dev, int new_mtu)
+ {
+ 	struct stmmac_priv *priv = netdev_priv(dev);
+-	int txfifosz = priv->plat->tx_fifo_size;
+ 	struct stmmac_dma_conf *dma_conf;
+ 	const int mtu = new_mtu;
+ 	int ret;
+ 
+-	if (txfifosz == 0)
+-		txfifosz = priv->dma_cap.tx_fifo_size;
+-
+-	txfifosz /= priv->plat->tx_queues_to_use;
+-
+ 	if (stmmac_xdp_is_enabled(priv) && new_mtu > ETH_DATA_LEN) {
+ 		netdev_dbg(priv->dev, "Jumbo frames not supported for XDP\n");
+ 		return -EINVAL;
+ 	}
+-
+-	new_mtu = STMMAC_ALIGN(new_mtu);
+-
+-	/* If condition true, FIFO is too small or MTU too large */
+-	if ((txfifosz < new_mtu) || (new_mtu > BUF_SIZE_16KiB))
+-		return -EINVAL;
+ 
+ 	if (netif_running(dev)) {
+ 		netdev_dbg(priv->dev, "restarting interface to change its MTU\n");
+--- a/drivers/regulator/fan53555.c
++++ b/drivers/regulator/fan53555.c
+@@ -113,6 +113,7 @@
+ enum {
+ 	FAN53555_CHIP_REV_00 = 0x3,
+ 	FAN53555_CHIP_REV_13 = 0xf,
++	FAN53555_CHIP_REV_23 = 0xc,
+ };
+ 
+ enum {
+@@ -305,6 +306,10 @@
+ 			di->vsel_step = 10000;
+ 			di->enable_time = 400;
+ 			break;
++		case FAN53555_CHIP_REV_23:
++			di->vsel_min = 600000;
++			di->vsel_step = 12500;
++			break;
+ 		default:
+ 			dev_err(di->dev,
+ 				"Chip ID %d with rev %d not supported!\n",
+--- a/drivers/regulator/rk808-regulator.c
++++ b/drivers/regulator/rk808-regulator.c
+@@ -207,6 +207,7 @@
+ 
+ struct rk808_regulator_data {
+ 	struct gpio_desc *dvs_gpio[2];
++	unsigned max_buck_steps_per_change;
+ };
+ 
+ static const struct linear_range rk808_ldo3_voltage_ranges[] = {
+@@ -419,7 +420,8 @@
+ }
+ 
+ static int rk808_buck1_2_i2c_set_voltage_sel(struct regulator_dev *rdev,
+-					     unsigned sel)
++					     unsigned sel,
++					     int max_steps)
+ {
+ 	int ret, delta_sel;
+ 	unsigned int old_sel, tmp, val, mask = rdev->desc->vsel_mask;
+@@ -438,8 +440,8 @@
+ 	 * the risk of overshoot. Put it into a multi-step, can effectively
+ 	 * avoid this problem, a step is 100mv here.
+ 	 */
+-	while (delta_sel > MAX_STEPS_ONE_TIME) {
+-		old_sel += MAX_STEPS_ONE_TIME;
++	while (delta_sel > max_steps) {
++		old_sel += max_steps;
+ 		val = old_sel << (ffs(mask) - 1);
+ 		val |= tmp;
+ 
+@@ -473,12 +475,13 @@
+ 	struct rk808_regulator_data *pdata = rdev_get_drvdata(rdev);
+ 	int id = rdev_get_id(rdev);
+ 	struct gpio_desc *gpio = pdata->dvs_gpio[id];
++	int max_steps = pdata->max_buck_steps_per_change;
+ 	unsigned int reg = rdev->desc->vsel_reg;
+ 	unsigned old_sel;
+ 	int ret, gpio_level;
+ 
+ 	if (!gpio)
+-		return rk808_buck1_2_i2c_set_voltage_sel(rdev, sel);
++		return rk808_buck1_2_i2c_set_voltage_sel(rdev, sel, max_steps);
+ 
+ 	gpio_level = gpiod_get_value(gpio);
+ 	if (gpio_level == 0) {
+@@ -1863,6 +1866,12 @@
+ 				0 : tmp);
+ 	}
+ 
++	tmp = of_property_read_u32(dev->of_node, "max-buck-steps-per-change", &pdata->max_buck_steps_per_change);
++	if (tmp) {
++		pdata->max_buck_steps_per_change = MAX_STEPS_ONE_TIME;
++	}
++	dev_info(dev, "max buck steps per change: %d\n", pdata->max_buck_steps_per_change);
++
+ dt_parse_end:
+ 	of_node_put(np);
+ 	return ret;
+--- a/drivers/thermal/rockchip_thermal.c
++++ b/drivers/thermal/rockchip_thermal.c
+@@ -1061,6 +1061,28 @@
+ 	writel_relaxed(val_cru, regs + TSADCV3_HSHUT_CRU_INT_EN);
+ }
+ 
++static const struct rockchip_tsadc_chip rk3308_tsadc_data = {
++	.chn_num = 2, /* 2 channels for tsadc */
++
++	.tshut_mode = TSHUT_MODE_CRU, /* default TSHUT via CRU */
++	.tshut_temp = 95000,
++
++	.initialize = rk_tsadcv4_initialize,
++	.irq_ack = rk_tsadcv3_irq_ack,
++	.control = rk_tsadcv3_control,
++	.get_temp = rk_tsadcv2_get_temp,
++	.set_alarm_temp = rk_tsadcv2_alarm_temp,
++	.set_tshut_temp = rk_tsadcv2_tshut_temp,
++	.set_tshut_mode = rk_tsadcv2_tshut_mode,
++
++	.table = {
++		.id = rk3328_code_table,
++		.length = ARRAY_SIZE(rk3328_code_table),
++		.data_mask = TSADCV2_DATA_MASK,
++		.mode = ADC_INCREMENT,
++	},
++};
++
+ static const struct rockchip_tsadc_chip px30_tsadc_data = {
+ 	/* cpu, gpu */
+ 	.chn_offset = 0,
+@@ -1323,6 +1345,10 @@
+ 		.data = (void *)&rk3288_tsadc_data,
+ 	},
+ 	{
++		.compatible = "rockchip,rk3308-tsadc",
++		.data = (void *)&rk3308_tsadc_data,
++	},
++	{
+ 		.compatible = "rockchip,rk3328-tsadc",
+ 		.data = (void *)&rk3328_tsadc_data,
+ 	},

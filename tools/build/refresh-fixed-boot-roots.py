@@ -66,7 +66,7 @@ def refresh(project, ota_source, input_roots, boot_manifest, work, watchdog_bina
     resources = load(ota_source / 'tools/package-runtime.py').framework_files(project)
     work.mkdir(parents=True)
     for name in ('normal', 'rescue', 'public', 'boot', 'rescue-defaults'):
-        subprocess.run(['cp', '-a', '--reflink=auto', str(input_roots / name), str(work / name)], check=True)
+        subprocess.run(['cp', '-a', '--reflink=auto', str((input_roots / name).resolve(strict=True)), str(work / name)], check=True)
     common = project / 'components/common/rootfs-overlay'
     for role in ROLES:
         root = work / role

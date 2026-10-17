@@ -1,0 +1,32 @@
+{
+  "license": "GPL-2.0-only",
+  "source_version": "6.12.111",
+  "source": "retained Armbian OECT 6.12.111 corresponding source; upstream file copyrights retained",
+  "files": [
+    {
+      "path": "drivers/mmc/core/core.c",
+      "upstream_sha256": "06bdfc9e26891f0b8c1eaf8d050edb57b14b0433073694a0bf9c9bc9f5669be9",
+      "retained_sha256": "002c85b391e02574f6de6c757a2084a3fc761d7e3d2e4a98a265be16befd47c0"
+    },
+    {
+      "path": "drivers/net/ethernet/stmicro/stmmac/stmmac_main.c",
+      "upstream_sha256": "fcc43a3e704a82cb3ee8d9c2ce5b4afaff4c61d32344fb65af666e69286c92a7",
+      "retained_sha256": "bfd68635f36f4cdedb5ff049abe77f69e5f72630673afbf1e5fd8aa9a94e5d4d"
+    },
+    {
+      "path": "drivers/regulator/fan53555.c",
+      "upstream_sha256": "85d81789a5fe438d544c13726d4b61c4cadb4131359d9d274a06531b47155af9",
+      "retained_sha256": "17db1eb4e2acfe2df3eef113ac5e62ea280e395e7812c9cd05b932621b5ea015"
+    },
+    {
+      "path": "drivers/regulator/rk808-regulator.c",
+      "upstream_sha256": "b41d013ac3887876773fbf3294932e04368aebadc92adc81abd4544218027c38",
+      "retained_sha256": "02be67d45c2412945156cb68d02151aca118b3a3570c40f3ed25f96f0f727b46"
+    },
+    {
+      "path": "drivers/thermal/rockchip_thermal.c",
+      "upstream_sha256": "182348e024ca6dfd829c87459691d43ffc3eb7388280be525689cf4ad25662fa",
+      "retained_sha256": "a8771a3a076e21211499c3a2ac4299cea88e7eccf1f8d7733bd3cad4c31d6f95"
+    }
+  ]
+}

@@ -35,6 +35,17 @@ def main():
         return
     if args.auto and network_login_confirmation():
         return
+    if args.auto and os.geteuid() == 0:
+        policy_path=Path('/etc/image-framework/k3s.json')
+        if policy_path.is_file():
+            from kube_runtime import installed, mark_joined
+            policy=json.loads(policy_path.read_text())
+            if Path(policy['state_file']).is_file() and installed(policy)['ready']:
+                previous=json.loads(Path(policy['state_file']).read_text())
+                if previous.get('plan'):
+                    mark_joined(policy, previous['plan'])
+        from auth_config import remind
+        remind()
     node = json.loads(Path('/etc/image-framework/node.json').read_text())
     if node['workload_component'] == 'none':
         if '--auto' not in sys.argv:
