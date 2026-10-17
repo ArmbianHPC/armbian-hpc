@@ -92,10 +92,66 @@ def test_metadata_and_publish_updates_preserve_version_tag(tmp_path):
         'html_url': 'https://github.com/owner/repo/releases/tag/v1.2.0',
         'assets': [{'name': asset.name, 'size': asset.stat().st_size, 'digest': 'sha256:' + module.sha256(asset)}]}
     public = {**current, 'draft': False}
-    with patch.object(module, 'release', side_effect=[current, current, current, public]), patch.object(module.subprocess, 'run') as mutate:
+    with patch.object(module, 'release', side_effect=[current, current, current, public]), patch.object(module.subprocess, 'run') as mutate, patch.object(module, 'release_history', return_value=[]):
         result = module.publish_packages('owner/repo', 'v1.2.0', [asset], notes,
             apply=True, release_id=42, publish=True)
     updates = [json.loads(call.kwargs['input']) for call in mutate.call_args_list if 'PATCH' in call.args[0]]
     assert len(updates) == 2 and all(row['tag_name'] == 'v1.2.0' for row in updates)
     assert updates[0]['draft'] is True and updates[1]['draft'] is False
     assert result['draft'] is False
+
+
+@pytest.mark.parametrize('tag,history', [
+    ('v1.2.3-r9', ['v1.2.2']),
+    ('v1.2.3-r17', ['v1.2.3-r1', 'v1.2.3-r9']),
+    ('v1.2.4-r3', ['v1.2.3-r17']),
+    ('v1.3.0-r2', ['v1.2.3-r17']),
+    ('v2.0.0-r1', ['v1.3.0-r2']),
+    ('v1.2.3-r9', ['v1.2.3-r9']),
+])
+def test_consecutive_base_and_skipped_revision_numbers(tag, history):
+    module = load('revision_sequence')
+    module.check_sequence(tag, history)
+
+
+@pytest.mark.parametrize('tag,history', [
+    ('v1.2.5-r1', ['v1.2.3-r9']),
+    ('v1.4.0-r1', ['v1.2.3-r9']),
+    ('v3.0.0-r1', ['v1.2.3-r9']),
+    ('v1.3.1-r1', ['v1.2.3-r9']),
+    ('v2.1.0-r1', ['v1.2.3-r9']),
+    ('v1.2.3-r8', ['v1.2.3-r9']),
+    ('v1.2.2-r19', ['v1.2.3-r9']),
+    ('v1.2.3-R9', ['v1.2.2']),
+    ('v1.2.3-r0', ['v1.2.2']),
+    ('v1.2.3-r09', ['v1.2.2']),
+])
+def test_invalid_release_order_or_revision_is_rejected(tag, history):
+    module = load('revision_sequence')
+    with pytest.raises(ValueError):
+        module.check_sequence(tag, history)
+
+
+def test_publish_sequence_refusal_never_mutates_remote(tmp_path):
+    module = load('revision_sequence')
+    asset = tmp_path / 'package.tar.xz'
+    asset.write_bytes(b'payload')
+    notes = tmp_path / 'v1.2.5-r1.md'
+    notes.write_text('Changes')
+    notes.with_name('v1.2.5-r1.zh-CN.md').write_text('Changes')
+    with patch.object(module, 'release_history', return_value=['v1.2.3-r9']), patch.object(module.subprocess, 'run') as mutate:
+        with pytest.raises(ValueError, match='consecutive'):
+            module.publish_packages('owner/repo', 'v1.2.5-r1', [asset], notes, apply=True, publish=True)
+    mutate.assert_not_called()
+
+
+def test_revision_firmware_names_and_manifest(tmp_path):
+    module = load('revision_firmware')
+    tag = 'v1.2.1-r7'
+    names = module.names(tag[1:], 'wxy-oect', 'bookworm', '6.12.111', 'squashfs', '20261017')
+    rows = [{'file': name, 'size': 1, 'sha256': 'a' * 64,
+             'redistribution': {'reviewed': True, 'evidence': ['fixture']}} for name in names]
+    path = tmp_path / 'manifest.json'
+    path.write_text(json.dumps({'tag': tag, 'packages': rows}))
+    assert module.manifest_files(path, tag) == rows
+    assert all('_1.2.1-r7_' in name for name in names)

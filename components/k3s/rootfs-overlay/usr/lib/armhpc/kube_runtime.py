@@ -111,7 +111,7 @@ def cluster_ready(policy, plan):
         return False
     result = subprocess.run(['/usr/local/bin/k3s','kubectl','--kubeconfig',str(config),
                              '--request-timeout=5s','get','node',plan['node_name'],'-o','json'],
-                            text=True, capture_output=True, timeout=10)
+                            text=True, capture_output=True, timeout=10, env=cli_environment(policy))
     if result.returncode:
         return False
     value = json.loads(result.stdout)
@@ -147,23 +147,63 @@ def refresh_recovery(changed=(),allow_uninstalled=False):
     return capture(policy,plan)
 
 
+def cli_environment(policy):
+    """Use the selected installation instead of a shell's default K3s instance."""
+    environment = dict(os.environ)
+    for name in ('CONTAINER_RUNTIME_ENDPOINT', 'IMAGE_SERVICE_ENDPOINT'):
+        environment.pop(name, None)
+    environment['K3S_DATA_DIR'] = str(Path(policy['data_dir']))
+    environment['K3S_CONFIG_FILE'] = str(Path(policy['configuration_dir']) / 'config.yaml')
+    environment['CRI_CONFIG_FILE'] = str(Path(policy['data_dir']) / 'agent/etc/crictl.yaml')
+    return environment
+
+
 def runtime(policy):
-    state=read_json(Path(policy['state_file']),{})
-    plan=state.get('plan',{})
-    unit='k3s-agent.service' if plan.get('role')=='agent' else 'k3s.service'
-    active=subprocess.run(['systemctl','is-active','--quiet',unit],capture_output=True,timeout=3).returncode==0
-    cri=False;api=None
+    state = read_json(Path(policy['state_file']), {})
+    plan = state.get('plan', {})
+    unit = 'k3s-agent.service' if plan.get('role') == 'agent' else 'k3s.service'
+    errors = []
+    environment = cli_environment(policy)
+
+    def probe(name, arguments, timeout=12):
+        try:
+            result = subprocess.run(arguments, text=True, capture_output=True,
+                                    timeout=timeout, env=environment)
+        except subprocess.TimeoutExpired:
+            errors.append({'check': name, 'code': 'timeout', 'timeout_seconds': timeout})
+            return None
+        except OSError:
+            errors.append({'check': name, 'code': 'command_unavailable'})
+            return None
+        if result.returncode:
+            errors.append({'check': name, 'code': 'command_failed', 'exit_code': result.returncode})
+            return None
+        return result
+
+    service = probe('service', ['systemctl', 'is-active', '--quiet', unit], timeout=3)
+    active = service is not None
+    cri = False
+    api = None
     if active:
-        result=subprocess.run(['/usr/local/bin/k3s','crictl','--timeout=2s','info'],text=True,capture_output=True,timeout=4)
-        if result.returncode==0:
-            info=json.loads(result.stdout)
-            cri=any(c.get('type')=='RuntimeReady' and c.get('status') is True for c in info.get('status',{}).get('conditions',[]))
-        if plan.get('role')!='agent':
-            result=subprocess.run(['/usr/local/bin/k3s','kubectl','--request-timeout=2s','get','--raw=/readyz'],
-                                  text=True,capture_output=True,timeout=4)
-            api=result.returncode==0 and result.stdout.strip()=='ok'
-    return {'service':unit,'active':active,'cri_ready':cri,'api_ready':api,
-            'ready':bool(plan and active and cri and api is not False)}
+        result = probe('cri', ['/usr/local/bin/k3s', 'crictl', '--config', environment['CRI_CONFIG_FILE'],
+                               '--timeout=5s', 'info'])
+        if result is not None:
+            try:
+                info = json.loads(result.stdout)
+                conditions = info['status']['conditions']
+                cri = any(c.get('type') == 'RuntimeReady' and c.get('status') is True for c in conditions)
+            except (ValueError, KeyError, TypeError, AttributeError):
+                errors.append({'check': 'cri', 'code': 'invalid_response'})
+            if not cri and not any(e['check'] == 'cri' for e in errors):
+                errors.append({'check': 'cri', 'code': 'runtime_not_ready'})
+        if plan.get('role') != 'agent':
+            result = probe('api', ['/usr/local/bin/k3s', 'kubectl', '--kubeconfig', '/etc/rancher/k3s/k3s.yaml',
+                                   '--request-timeout=5s', 'get', '--raw=/readyz'])
+            api = result is not None and result.stdout.strip() == 'ok'
+            if result is not None and not api:
+                errors.append({'check': 'api', 'code': 'api_not_ready'})
+    return {'service': unit, 'active': active, 'cri_ready': cri, 'api_ready': api,
+            'ready': bool(plan and active and cri and api is not False), 'errors': errors}
 
 
 def mark_joined(policy, plan):

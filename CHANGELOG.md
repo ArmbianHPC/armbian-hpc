@@ -1,5 +1,7 @@
-# Unreleased
+# v1.2.1-r1
 
+- Integrate managed K3s probes, paired BOOT recovery and shared ext4 startup fixes.
+- Record revision-aware OECT and OESP build provenance and attachment names.
 - Allow independent framework and OTA versions with explicit compatibility requirements and separate source provenance.
 
 # v1.2.0

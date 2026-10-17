@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -24,6 +25,11 @@ def build(config):
     project = Path(__file__).resolve().parents[2]
     ota = Path(cfg['ota_source']).resolve(strict=True)
     version = (project / 'VERSION').read_text().strip()
+    revision_file = project / 'REVISION'
+    revision = revision_file.read_text().strip() if revision_file.exists() else None
+    if revision and not re.fullmatch(r'r[1-9][0-9]*', revision):
+        raise ValueError('Firmware revision must use lowercase r and a positive integer')
+    display_version = version + ('-' + revision if revision else '')
     sys.path.insert(0, str(project))
     from framework.compatibility import check_sources
     compatibility = check_sources(ota, project)
@@ -62,7 +68,7 @@ def build(config):
         folder = work / role / 'usr/share/doc/armhpc'
         folder.mkdir(parents=True, exist_ok=True)
         (folder / 'BUILD-SOURCES.json').write_text(json.dumps({**provenance,
-            'version': version, 'release': cfg['release'], 'source_versions': source_versions,
+            'version': version, 'display_version': display_version, 'revision': revision, 'release': cfg['release'], 'source_versions': source_versions,
             'source_commits': refs, 'compatibility': compatibility,
             'fixed_boot': json.loads((work / 'boot-manifest.json').read_text())}, indent=2) + '\n')
         for repo in (project, ota):
@@ -128,7 +134,7 @@ def build(config):
         '--image', image, '--output', destination, '--trust', trust, '--stem', cfg['stem'], *extra)
     assets = [destination / (cfg['stem'] + '.img.xz'),
               destination / (cfg['stem'].replace('armhpc_', 'armhpc-ota_', 1) + '.tar.xz')]
-    result = {'version': version, 'release': cfg['release'], 'sequence': cfg['sequence'],
+    result = {'version': version, 'display_version': display_version, 'revision': revision, 'release': cfg['release'], 'sequence': cfg['sequence'],
               'source_versions': source_versions, 'source_commits': refs,
               'compatibility': compatibility, 'hardware_verified': False,
               'image_redistribution': provenance.get('image_redistribution', {'reviewed': False}),

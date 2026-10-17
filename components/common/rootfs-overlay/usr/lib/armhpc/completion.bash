@@ -223,7 +223,7 @@ _armhpc_complete()
             ota)
                 options+=(--json --yes)
                 if [[ -z $operation ]]; then
-                    [[ $cur == -* ]] || _armhpc_complete_words bootstrap check plan download apply status logs cancel recover source doctor retry tools receive boot
+                    [[ $cur == -* ]] || _armhpc_complete_words bootstrap check plan download apply status logs cancel recover source doctor retry tools receive boot storage
                     options+=(--version)
                 else
                     case $operation in
@@ -243,15 +243,20 @@ _armhpc_complete()
                             [[ -n $action || $cur == -* ]] || _armhpc_complete_words status update
                             [[ $action != update ]] || options+=(--bundle --rollback --request-id)
                             ;;
+                        storage)
+                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words status export acknowledge plan cleanup stage
+                            options+=(--backup-id --inventory-sha256 --archive-sha256 --plan-id --item --bytes)
+                            ;;
                         receive) options+=(--manifest --target --request-id --phase) ;;
                         boot)
-                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words plan enter apply status rollback restore
+                            [[ -n $action || $cur == -* ]] || _armhpc_complete_words plan enter apply status rollback restore resume-system
                             case $action in
                                 plan) options+=(--bundle) ;;
                                 enter) options+=(--bundle --request-id --yes) ;;
                                 apply) options+=(--bundle --request-id --exported-backup-sha256 --commit) ;;
                                 rollback) options+=(--request-id) ;;
                                 restore) options+=(--request-id --execute --yes) ;;
+                                resume-system) options+=(--request-id --yes) ;;
                             esac
                             ;;
                     esac
