@@ -11,9 +11,9 @@ ARMHPC is a modular framework. A board needs its own profile, boot chain, kernel
 
 ## Choose a package
 
-- Download a board-matching image or system OTA archive from [Releases](https://github.com/ArmbianHPC/armbian-hpc/releases/latest).
+- Download a board-matching image or system OTA archive from [Releases](https://github.com/EDGEHPC/armbian-hpc/releases/latest).
 - Fresh images use `root` / `1`. Sign in and run `passwd`. Identity and SSH host keys are generated on the device.
-- Use [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota/releases/latest) for the Windows/Linux controller and signed tool maintenance. A tool maintenance package does not replace the normal system or Rescue base image.
+- Use [armhpc-ota](https://github.com/EDGEHPC/armhpc-ota/releases/latest) for the Windows/Linux controller and signed tool maintenance. A tool maintenance package does not replace the normal system or Rescue base image.
 - Existing OTA installations retain the configured credentials and preserved identity/network settings. The normal-system hostname is retained according to the documented preservation policy.
 - Select SATA targets explicitly and verify their persistent identity. Follow the board's installation and recovery guide before writing storage.
 

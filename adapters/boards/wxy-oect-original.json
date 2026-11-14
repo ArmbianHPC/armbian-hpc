@@ -922,7 +922,7 @@
     }
   },
   "ota": {
-    "engine_repository": "https://github.com/ArmbianHPC/armhpc-ota",
+    "engine_repository": "https://github.com/EDGEHPC/armhpc-ota",
     "anchor_abi": "armhpc-anchor-squashfs-v2",
     "hardware_acceptance_passed": false,
     "daily_bootloader_updates": false,
