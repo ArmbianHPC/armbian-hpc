@@ -29,7 +29,7 @@ WXY OEC Turbo (OECT) is the first integrated device. Its current firmware uses S
 | `armhpc-rescue` | Manage Rescue, installation, and recovery. |
 | `armhpc-kube` | Manage the optional K3s workload. |
 
-The shared OTA engine and controller software are maintained in [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota).
+The shared OTA engine and controller software are maintained in [armhpc-ota](https://github.com/EDGEHPC/armhpc-ota).
 
 ## Configure a build
 
@@ -46,7 +46,7 @@ Replace `<target>` with an ID from the list; `wxy-oect-k3s` is the first supplie
 
 ## Downloads
 
-[Releases](https://github.com/ArmbianHPC/armbian-hpc/releases) use version-only titles such as `v1.0.0`. Firmware packages identify the device model and software combination:
+[Releases](https://github.com/EDGEHPC/armbian-hpc/releases) use version-only titles such as `v1.0.0`. Firmware packages identify the device model and software combination:
 
 ```text
 armhpc_<version>_<model>_<distribution>_<kernel>_<filesystem>_<build-date>.img.xz
@@ -66,7 +66,7 @@ The supplied v1.2.0 images use `root` with initial password `1`. Sign in through
 - [Device compatibility](docs/DEVICES.md)
 - [Contributing](CONTRIBUTING.md)
 - [Maintenance](docs/MAINTENANCE.md)
-- [Questions and ideas](https://github.com/ArmbianHPC/armbian-hpc/discussions)
+- [Questions and ideas](https://github.com/EDGEHPC/armbian-hpc/discussions)
 
 - [OES1PLUS v2.2 integration](docs/OESP.md) / [简体中文](docs/OESP.zh-CN.md)
 

@@ -48,7 +48,7 @@ for target,n in [('system','normal'),('rescue','rescue')]:
     save(root/'etc/armhpc/ota.json',{'state':'/var/lib/armhpc/ota','cache':'/data/armhpc-ota/cache','trust':'/etc/armhpc/ota-trust.d',
          'profile':'wxy-oect-original','storage_layout':'oect-squashfs-ab-v2','hardware_policy':'development',
          'feed':'https://github.com/chens32/armbian-hpc/releases/latest/download/ota-index.json',
-         'tools_source':'https://github.com/ArmbianHPC/armhpc-ota/releases'})
+         'tools_source':'https://github.com/EDGEHPC/armhpc-ota/releases'})
     save(root/'etc/armhpc/release.json',{'release':RELEASE,'target':target,'kernel':KERNEL})
     save(root/'etc/armhpc/image-build-time.json',{'epoch':EPOCH,'revision':RELEASE})
     (root/'etc/armhpc/anchor-kernel-sha256').write_text(kernel_hash+'\n')

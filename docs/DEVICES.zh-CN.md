@@ -11,9 +11,9 @@ ARMHPC 为模块化框架。每个板卡需要自己的配置、引导链、内�
 
 ## 选择安装包
 
-- 从 [Releases](https://github.com/ArmbianHPC/armbian-hpc/releases/latest) 下载机型匹配的镜像或系统 OTA。
+- 从 [Releases](https://github.com/EDGEHPC/armbian-hpc/releases/latest) 下载机型匹配的镜像或系统 OTA。
 - 全新镜像使用 `root` / `1`，登录后执行 `passwd`。设备身份和 SSH 主机密钥在设备端生成。
-- Windows／Linux 上位机及签名工具维护包从 [armhpc-ota](https://github.com/ArmbianHPC/armhpc-ota/releases/latest) 获取。工具维护包不替换普通系统或 Rescue 基础镜像。
+- Windows／Linux 上位机及签名工具维护包从 [armhpc-ota](https://github.com/EDGEHPC/armhpc-ota/releases/latest) 获取。工具维护包不替换普通系统或 Rescue 基础镜像。
 - 已有设备 OTA 按保留策略保留登录、身份、网络和普通系统主机名等配置。
 - 明确选择 SATA 目标并核对持久身份，写盘前按板卡说明准备安装与恢复入口。
 
